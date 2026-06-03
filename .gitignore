@@ -1,0 +1,19 @@
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local environment configuration (contains sensitive tokens)
+.env
+
+# Google API Service Account Key file (contains private keys)
+google/credentials.json
+
+# Local customer database / session cache
+data/sessions.json
+
+# System files
+.DS_Store
+Thumbs.db
+*.log

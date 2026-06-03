@@ -1,0 +1,22 @@
+{
+  "name": "whatsapp-grocery-bot",
+  "version": "1.0.0",
+  "description": "WhatsApp Grocery Ordering System for Radhey General Store",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.2",
+    "body-parser": "^1.20.2",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "googleapis": "^137.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.2"
+  },
+  "author": "Antigravity",
+  "license": "ISC"
+}
