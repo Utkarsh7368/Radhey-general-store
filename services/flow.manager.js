@@ -47,10 +47,10 @@ const flowManager = {
           await this.handleSelectQuantityState(phone, type, data, session, catalog);
           break;
         case 'ADDED_TO_CART':
-          await this.handleAddedToCartState(phone, type, data, session);
+          await this.handleAddedToCartState(phone, type, data, session, profileName);
           break;
         case 'CART':
-          await this.handleCartState(phone, type, data, session);
+          await this.handleCartState(phone, type, data, session, profileName);
           break;
         case 'CHECKOUT_NAME':
           await this.handleCheckoutNameState(phone, type, data, session, profileName);
@@ -402,7 +402,7 @@ const flowManager = {
     }
   },
 
-  async handleAddedToCartState(phone, type, data, session) {
+  async handleAddedToCartState(phone, type, data, session, profileName = '') {
     if (type === 'button_reply') {
       if (data === 'cart_continue') {
         session.currentState = 'SELECT_CATEGORY';
@@ -413,7 +413,7 @@ const flowManager = {
         sessionService.saveSession(phone, session);
         await this.sendCartSummary(phone, session);
       } else if (data === 'cart_checkout') {
-        await this.startCheckoutFlow(phone, session);
+        await this.startCheckoutFlow(phone, session, profileName);
       }
     } else {
       // Resend post-add choices
@@ -458,10 +458,10 @@ const flowManager = {
     await whatsappService.sendButtons(phone, summary, buttons);
   },
 
-  async handleCartState(phone, type, data, session) {
+  async handleCartState(phone, type, data, session, profileName = '') {
     if (type === 'button_reply') {
       if (data === 'cart_checkout') {
-        await this.startCheckoutFlow(phone, session);
+        await this.startCheckoutFlow(phone, session, profileName);
       } else if (data === 'cart_continue' || data === 'welcome_browse') {
         session.currentState = 'SELECT_CATEGORY';
         sessionService.saveSession(phone, session);
@@ -506,7 +506,7 @@ const flowManager = {
   // CHECKOUT FLOW MANAGEMENT
   // ==========================================
 
-  async startCheckoutFlow(phone, session) {
+  async startCheckoutFlow(phone, session, profileName = '') {
     if (session.cart.length === 0) {
       await whatsappService.sendText(phone, "Your cart is empty! Add items before checkout.");
       return this.sendWelcome(phone);
@@ -516,9 +516,7 @@ const flowManager = {
     session.currentState = 'CHECKOUT_NAME';
     sessionService.saveSession(phone, session);
     
-    // We prompt the user. We will offer using their profile name if captured by webhook
-    // profileName is loaded on message receive, let's ask for approval.
-    // If webhook loaded a name, we prompt them to reuse. Otherwise, we ask them to type.
+    await this.promptName(phone, session, profileName);
   },
 
   async promptName(phone, session, profileName) {
