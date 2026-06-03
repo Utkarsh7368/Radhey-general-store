@@ -184,6 +184,42 @@ const whatsappService = {
       }
     };
     return postToMeta(payload);
+  },
+
+  /**
+   * Sends a template message to initiate a conversation or bypass the 24h window.
+   * @param {string} to - Recipient phone number
+   * @param {string} templateName - Name of the pre-approved template on Meta
+   * @param {string} languageCode - Language code, e.g., 'en'
+   * @param {Array<string>} bodyParams - Ordered list of parameter values for the template body
+   */
+  async sendTemplate(to, templateName, languageCode = 'en', bodyParams = []) {
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'template',
+      template: {
+        name: templateName,
+        language: {
+          code: languageCode
+        }
+      }
+    };
+
+    if (bodyParams.length > 0) {
+      payload.template.components = [
+        {
+          type: 'body',
+          parameters: bodyParams.map(param => ({
+            type: 'text',
+            text: String(param)
+          }))
+        }
+      ];
+    }
+
+    return postToMeta(payload);
   }
 };
 

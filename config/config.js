@@ -11,6 +11,8 @@ const config = {
     phoneNumberId: process.env.PHONE_NUMBER_ID,
     verifyToken: process.env.VERIFY_TOKEN || 'radhey_store_verify_token_123',
     ownerPhone: process.env.OWNER_PHONE,
+    ownerTemplateName: process.env.OWNER_TEMPLATE_NAME || null,
+    ownerTemplateLang: process.env.OWNER_TEMPLATE_LANG || 'en',
     apiVersion: 'v19.0',
   },
   google: {

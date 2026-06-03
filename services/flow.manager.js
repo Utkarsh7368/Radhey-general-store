@@ -707,29 +707,49 @@ const flowManager = {
         // 1. Process order and alert owner
         const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
         
-        let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
-        ownerAlert += `Radhey General Store\n`;
-        ownerAlert += `--------------------------------\n`;
-        ownerAlert += `👤 *Customer:* ${session.customerName}\n`;
-        ownerAlert += `📞 *Phone:* ${session.customerPhone}\n`;
-        ownerAlert += `🏠 *Address:* ${session.address}\n`;
-        ownerAlert += `📍 *GPS Map:* https://maps.google.com/?q=${session.location.latitude},${session.location.longitude}\n\n`;
-        ownerAlert += `*Items:*\n`;
-        
+        let itemsText = '';
         let grandTotal = 0;
-        session.cart.forEach((item) => {
+        session.cart.forEach((item, index) => {
           const variantDesc = item.variantName ? ` (${item.variantName})` : '';
           const itemTotal = item.price * item.quantity;
           grandTotal += itemTotal;
-          ownerAlert += `- ${item.productName}${variantDesc} x ${item.quantity} (₹${item.price} each)\n`;
+          itemsText += `${index + 1}. ${item.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
         });
         
-        ownerAlert += `--------------------------------\n`;
-        ownerAlert += `💰 *Total Payment:* *₹${grandTotal}*\n\n`;
-        ownerAlert += `Please contact the customer for delivery verification.`;
+        const gpsUrl = `https://maps.google.com/?q=${session.location.latitude},${session.location.longitude}`;
 
-        // Send order alert to owner
-        await whatsappService.sendText(ownerPhone, ownerAlert);
+        if (config.whatsapp.ownerTemplateName) {
+          // Send template message to bypass 24h window
+          const bodyParams = [
+            session.customerName,
+            session.customerPhone,
+            session.address,
+            gpsUrl,
+            itemsText.trim(),
+            `₹${grandTotal}`
+          ];
+          await whatsappService.sendTemplate(
+            ownerPhone,
+            config.whatsapp.ownerTemplateName,
+            config.whatsapp.ownerTemplateLang,
+            bodyParams
+          );
+        } else {
+          // Fallback: Send standard text message
+          let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
+          ownerAlert += `Radhey General Store\n`;
+          ownerAlert += `--------------------------------\n`;
+          ownerAlert += `👤 *Customer:* ${session.customerName}\n`;
+          ownerAlert += `📞 *Phone:* ${session.customerPhone}\n`;
+          ownerAlert += `🏠 *Address:* ${session.address}\n`;
+          ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+          ownerAlert += `*Items:*\n${itemsText}`;
+          ownerAlert += `--------------------------------\n`;
+          ownerAlert += `💰 *Total Payment:* *₹${grandTotal}*\n\n`;
+          ownerAlert += `Please contact the customer for delivery verification.`;
+
+          await whatsappService.sendText(ownerPhone, ownerAlert);
+        }
 
         // Send confirmation to customer
         const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal}\n*Delivering to:* ${session.address}`;
