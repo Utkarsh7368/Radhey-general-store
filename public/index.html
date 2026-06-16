@@ -750,6 +750,49 @@
       line-height: 1.4;
     }
 
+    .copy-upi-container {
+      width: 100%;
+      background-color: var(--bg);
+      border-radius: var(--radius);
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .upi-label-text {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .upi-id-value {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .copy-upi-btn {
+      background-color: var(--card-bg);
+      color: var(--primary);
+      border: 1.5px solid var(--primary);
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .copy-upi-btn:active {
+      background-color: var(--primary-light);
+      transform: scale(0.98);
+    }
+
     .complete-order-btn {
       width: 100%;
       background-color: var(--accent);
@@ -879,6 +922,15 @@
         📱 Pay with any UPI App (GPay/PhonePe/Paytm)
       </a>
 
+      <!-- Copy UPI ID Fallback -->
+      <div class="copy-upi-container">
+        <span class="upi-label-text">UPI ID to pay:</span>
+        <span class="upi-id-value" id="paymentUpiIdText"></span>
+        <button type="button" class="copy-upi-btn" id="copyUpiBtn">
+          📋 Copy UPI ID
+        </button>
+      </div>
+
       <!-- Desktop QR Code -->
       <div class="qr-payment-section">
         <div class="qr-title">Or Scan QR Code to Pay</div>
@@ -959,6 +1011,8 @@
     const upiPayBtn = document.getElementById('upiPayBtn');
     const paymentQrCode = document.getElementById('paymentQrCode');
     const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
+    const paymentUpiIdText = document.getElementById('paymentUpiIdText');
+    const copyUpiBtn = document.getElementById('copyUpiBtn');
  
     // Pre-fill phone if provided
     if (userPhone) {
@@ -1351,15 +1405,43 @@
           paymentAmountText.textContent = `₹${result.grandTotal}`;
           paymentOrderIdText.textContent = `Order ID: #${result.orderId}`;
           
-          // Clean UPI ID and construct compliant UPI payment URL
+          // Clean UPI ID
           const cleanUpiId = (result.ownerUpiId || '').trim().replace(/\s+/g, '');
-          const upiUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&am=${result.grandTotal}&cu=INR`;
+          paymentUpiIdText.textContent = cleanUpiId;
+          
+          // Construct P2P UPI URL for mobile apps (amount-free to prevent NPCI security blocks)
+          const upiUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&cu=INR`;
+          
+          // Construct UPI URL for QR code (amount-prefilled, scanning is safe from NPCI blocks)
+          const upiQrUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&am=${result.grandTotal}&cu=INR`;
           
           // Update pay button href
           upiPayBtn.href = upiUrl;
           
           // Update QR Code image source using dynamic generator
-          paymentQrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiUrl)}`;
+          paymentQrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiQrUrl)}`;
+
+          // Configure Copy UPI Button
+          copyUpiBtn.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(cleanUpiId);
+              copyUpiBtn.textContent = '✅ Copied!';
+              setTimeout(() => {
+                copyUpiBtn.textContent = '📋 Copy UPI ID';
+              }, 2000);
+            } catch (err) {
+              const el = document.createElement('textarea');
+              el.value = cleanUpiId;
+              document.body.appendChild(el);
+              el.select();
+              document.execCommand('copy');
+              document.body.removeChild(el);
+              copyUpiBtn.textContent = '✅ Copied!';
+              setTimeout(() => {
+                copyUpiBtn.textContent = '📋 Copy UPI ID';
+              }, 2000);
+            }
+          };
 
           // Configure Confirm Payment Click Listener
           confirmPaymentBtn.onclick = () => {

@@ -183,41 +183,53 @@ const webhookController = {
       const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
       const gpsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
 
-      // 1. Send Order Alert to Store Owner
-      if (config.whatsapp.ownerTemplateName) {
-        const bodyParams = [
-          name,
-          phone,
-          address,
-          gpsUrl,
-          itemsText.trim(),
-          `₹${grandTotal}`
-        ];
-        await whatsappService.sendTemplate(
-          ownerPhone,
-          config.whatsapp.ownerTemplateName,
-          config.whatsapp.ownerTemplateLang,
-          bodyParams
-        );
-      } else {
-        let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
-        ownerAlert += `Radhey General Store\n`;
-        ownerAlert += `--------------------------------\n`;
-        ownerAlert += `👤 *Customer:* ${name}\n`;
-        ownerAlert += `📞 *Phone:* ${phone}\n`;
-        ownerAlert += `🏠 *Address:* ${address}\n`;
-        ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
-        ownerAlert += `*Items:*\n${itemsText}`;
-        ownerAlert += `--------------------------------\n`;
-        ownerAlert += `💰 *Total Payment:* *₹${grandTotal}*\n\n`;
-        ownerAlert += `Please contact the customer for delivery verification.`;
+      // Execute WhatsApp notifications asynchronously in the background
+      // This allows returning the successful order response to the browser instantly
+      (async () => {
+        try {
+          // 1. Send Order Alert to Store Owner
+          if (config.whatsapp.ownerTemplateName) {
+            const bodyParams = [
+              name,
+              phone,
+              address,
+              gpsUrl,
+              itemsText.trim(),
+              `₹${grandTotal}`
+            ];
+            await whatsappService.sendTemplate(
+              ownerPhone,
+              config.whatsapp.ownerTemplateName,
+              config.whatsapp.ownerTemplateLang,
+              bodyParams
+            );
+          } else {
+            let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
+            ownerAlert += `Radhey General Store\n`;
+            ownerAlert += `--------------------------------\n`;
+            ownerAlert += `👤 *Customer:* ${name}\n`;
+            ownerAlert += `📞 *Phone:* ${phone}\n`;
+            ownerAlert += `🏠 *Address:* ${address}\n`;
+            ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+            ownerAlert += `*Items:*\n${itemsText}`;
+            ownerAlert += `--------------------------------\n`;
+            ownerAlert += `💰 *Total Payment:* *₹${grandTotal}*\n\n`;
+            ownerAlert += `Please contact the customer for delivery verification.`;
 
-        await whatsappService.sendText(ownerPhone, ownerAlert);
-      }
+            await whatsappService.sendText(ownerPhone, ownerAlert);
+          }
+        } catch (err) {
+          console.error('❌ Failed to alert store owner:', err);
+        }
 
-      // 2. Send Order Confirmation receipt to Customer
-      const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal}\n*Delivering to:* ${address}`;
-      await whatsappService.sendText(phone, thankYouMessage);
+        try {
+          // 2. Send Order Confirmation receipt to Customer
+          const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal}\n*Delivering to:* ${address}`;
+          await whatsappService.sendText(phone, thankYouMessage);
+        } catch (err) {
+          console.error('❌ Failed to send customer confirmation receipt:', err);
+        }
+      })();
 
       // 3. Clear customer cart session but save profile and address
       sessionService.clearCart(phone);
