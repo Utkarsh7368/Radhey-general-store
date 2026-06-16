@@ -122,7 +122,10 @@ const webhookController = {
   async getCatalog(req, res) {
     try {
       const catalog = await sheetsService.getCatalog();
-      return res.json(catalog);
+      return res.json({
+        ...catalog,
+        botPhone: config.whatsapp.botPhone
+      });
     } catch (err) {
       console.error('❌ Error fetching catalog via API:', err);
       return res.status(500).json({ error: 'Failed to load catalog.' });

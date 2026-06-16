@@ -720,10 +720,27 @@
     let catalog = null;
     let cart = {}; // { productId: { ... } }
     let userLocation = { latitude: null, longitude: null };
+    let botPhone = ''; // Will be populated from /api/catalog
 
-    // Extract query parameters (like phone number)
+    // Extract query parameters (like phone number and timestamp)
     const urlParams = new URLSearchParams(window.location.search);
     const userPhone = urlParams.get('phone') || '';
+    const timestamp = parseInt(urlParams.get('t')) || 0;
+
+    // Verify link expiration (24h validity)
+    const now = Date.now();
+    const oneDayInMs = 24 * 60 * 60 * 1000;
+    if (!timestamp || (now - timestamp) > oneDayInMs) {
+      document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 24px; text-align: center; font-family: 'Outfit', sans-serif; background-color: #f8f9fa;">
+          <div style="font-size: 4rem; color: #c62828; margin-bottom: 16px;">⚠️</div>
+          <h2 style="font-weight: 700; color: #c62828; margin-bottom: 8px;">Link Expired</h2>
+          <p style="color: #7f8c8d; margin-bottom: 24px; max-width: 320px;">For security and to ensure you see the latest pricing, this catalog link has expired (valid for 24 hours).</p>
+          <p style="color: #7f8c8d; margin-bottom: 24px; max-width: 320px; font-weight: 600;">Please send "Hi" or "Menu" to our WhatsApp bot to get a new link.</p>
+        </div>
+      `;
+      throw new Error('Link expired');
+    }
 
     // Elements
     const catalogContainer = document.getElementById('catalogContainer');
@@ -769,7 +786,9 @@
       try {
         const res = await fetch('/api/catalog');
         if (!res.ok) throw new Error('API failed');
-        catalog = await res.json();
+        const data = await res.json();
+        catalog = data;
+        botPhone = data.botPhone || '919999999999';
         renderCatalog();
       } catch (err) {
         console.error('Failed to load catalog:', err);
@@ -1102,7 +1121,7 @@
     deliveryAddressInput.addEventListener('input', validateFormInputs);
 
     // Form Submission / Place Order
-    orderForm.addEventListener('submit', async (e) => {
+    orderForm.addEventListener('submit', (e) => {
       e.preventDefault();
       
       const payload = {
@@ -1117,33 +1136,40 @@
       localStorage.setItem(`profile_name_${payload.phone}`, payload.name);
       localStorage.setItem(`profile_address_${payload.phone}`, payload.address);
 
+      // Format items text
+      let itemsText = '';
+      let grandTotal = 0;
+      Object.values(cart).forEach((item, index) => {
+        const variantDesc = item.variantName ? ` (${item.variantName})` : '';
+        const itemTotal = item.price * item.quantity;
+        grandTotal += itemTotal;
+        itemsText += `${index + 1}. ${item.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
+      });
+
+      const gpsUrl = `https://maps.google.com/?q=${userLocation.latitude},${userLocation.longitude}`;
+
+      // Build the formatted message
+      let messageText = `🛍️ *NEW ORDER REQUEST*\n`;
+      messageText += `👤 *Name:* ${payload.name}\n`;
+      messageText += `📞 *Phone:* ${payload.phone}\n`;
+      messageText += `🏠 *Address:* ${payload.address}\n`;
+      messageText += `📍 *Location:* ${gpsUrl}\n\n`;
+      messageText += `*Items Ordered:*\n${itemsText.trim()}\n\n`;
+      messageText += `💰 *Total Payment:* ₹${grandTotal}`;
+
+      // Clear local storage cart and state
+      cart = {};
+      saveCartLocal();
+      refreshCartSummary();
+
       loadingOverlay.classList.add('show');
 
-      try {
-        const response = await fetch('/api/place-order', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const result = await response.json();
-        loadingOverlay.classList.remove('show');
-
-        if (response.ok && result.success) {
-          // Clear local storage cart and state
-          cart = {};
-          saveCartLocal();
-          successScreen.classList.add('show');
-        } else {
-          alert('Failed to place order: ' + (result.error || 'Server error.'));
-        }
-      } catch (err) {
-        loadingOverlay.classList.remove('show');
-        console.error(err);
-        alert('Network error. Failed to place order. Please try again.');
-      }
+      // Construct WhatsApp link
+      const cleanBotPhone = botPhone.replace(/[^0-9]/g, '');
+      const whatsappUrl = `https://wa.me/${cleanBotPhone}?text=${encodeURIComponent(messageText)}`;
+      
+      // Redirect
+      window.location.href = whatsappUrl;
     });
 
     // Load customer profile details from localStorage

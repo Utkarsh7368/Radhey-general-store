@@ -22,6 +22,13 @@ const flowManager = {
       if (type === 'text') {
         const textVal = data.toLowerCase().trim();
         const checkoutStates = ['CHECKOUT_NAME', 'CHECKOUT_PHONE', 'CHECKOUT_ADDRESS'];
+        
+        // Intercept order requests from the web catalog first
+        if (data.includes('🛍️ *NEW ORDER REQUEST*') || data.includes('NEW ORDER REQUEST')) {
+          await this.handleWebOrderRequest(phone, data);
+          return;
+        }
+
         if ((textVal === 'menu' || textVal === 'reset' || textVal === 'hi' || textVal === 'hello') && !checkoutStates.includes(session.currentState)) {
           session.currentState = 'WELCOME';
           sessionService.saveSession(phone, session);
@@ -31,7 +38,7 @@ const flowManager = {
         if ((textVal === 'contact' || textVal === 'support' || textVal === 'help') && !checkoutStates.includes(session.currentState)) {
           const contactInfo = "📞 *Radhey General Store*\n\n📍 *Address:* Main Bazaar, Near Temple, Sector 4\n📱 *Call/WhatsApp:* +91 99999 99999\n⏰ *Hours:* 8:00 AM - 9:00 PM\n\nWe provide home delivery for orders above ₹100.";
           const host = config.serverUrl || 'http://localhost:3000';
-          const catalogLink = `${host}/index.html?phone=${phone}`;
+          const catalogLink = `${host}/index.html?phone=${phone}&t=${Date.now()}`;
           return whatsappService.sendUrlButton(phone, contactInfo, '🛍️ Open Catalog', catalogLink);
         }
       }
@@ -96,10 +103,95 @@ const flowManager = {
 
   async sendWelcome(phone) {
     const host = config.serverUrl || 'http://localhost:3000';
-    const catalogLink = `${host}/index.html?phone=${phone}`;
+    const catalogLink = `${host}/index.html?phone=${phone}&t=${Date.now()}`;
 
     const body = `Welcome to *Radhey General Store*! 🛍️\n\nYour local Grocery & Daily Needs Store. Browse our catalog, select items, and place your order in one go on your phone! Click the button below to get started:\n\n*(Type "contact" anytime for store details)*`;
     await whatsappService.sendUrlButton(phone, body, '🛍️ Open Catalog', catalogLink);
+  },
+
+  async handleWebOrderRequest(phone, data) {
+    console.log(`🛍️ [FLOW] Parsing incoming web order request from ${phone}`);
+
+    // Parse values from text
+    const nameMatch = data.match(/👤 \*Name:\*\s*(.+)/i);
+    const name = nameMatch ? nameMatch[1].trim() : 'Customer';
+
+    const phoneMatch = data.match(/📞 \*Phone:\*\s*(.+)/i);
+    const customerPhone = phoneMatch ? phoneMatch[1].trim() : phone;
+
+    const addressMatch = data.match(/🏠 \*Address:\*\s*(.+)/i);
+    const address = addressMatch ? addressMatch[1].trim() : 'Not provided';
+
+    const locationMatch = data.match(/📍 \*Location:\*\s*(https:\/\/maps\.google\.com\/\?q=[^\s\n]+)/i);
+    const gpsUrl = locationMatch ? locationMatch[1].trim() : `https://maps.google.com/?q=0,0`;
+
+    // Extract items
+    let itemsText = '';
+    const itemsIndex = data.indexOf('*Items Ordered:*');
+    const totalIndex = data.indexOf('💰 *Total Payment:*');
+    if (itemsIndex !== -1 && totalIndex !== -1) {
+      itemsText = data.substring(itemsIndex + '*Items Ordered:*'.length, totalIndex).trim();
+    } else {
+      // Try lowercase/fallback search
+      const itemsIndexFallback = data.toLowerCase().indexOf('items ordered:');
+      const totalIndexFallback = data.toLowerCase().indexOf('total payment:');
+      if (itemsIndexFallback !== -1 && totalIndexFallback !== -1) {
+        itemsText = data.substring(itemsIndexFallback + 14, totalIndexFallback).trim();
+      } else {
+        itemsText = 'Details in message';
+      }
+    }
+
+    // Extract total
+    const totalMatch = data.match(/💰 \*Total Payment:\*\s*₹?\s*(.+)/i);
+    const total = totalMatch ? totalMatch[1].trim() : '0';
+
+    const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
+
+    try {
+      // 1. Send Order Alert to Store Owner (template)
+      if (config.whatsapp.ownerTemplateName) {
+        const bodyParams = [
+          name,
+          customerPhone,
+          address,
+          gpsUrl,
+          itemsText,
+          `₹${total}`.replace('₹₹', '₹')
+        ];
+        await whatsappService.sendTemplate(
+          ownerPhone,
+          config.whatsapp.ownerTemplateName,
+          config.whatsapp.ownerTemplateLang,
+          bodyParams
+        );
+      } else {
+        let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
+        ownerAlert += `Radhey General Store\n`;
+        ownerAlert += `--------------------------------\n`;
+        ownerAlert += `👤 *Customer:* ${name}\n`;
+        ownerAlert += `📞 *Phone:* ${customerPhone}\n`;
+        ownerAlert += `🏠 *Address:* ${address}\n`;
+        ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+        ownerAlert += `*Items:*\n${itemsText}\n`;
+        ownerAlert += `--------------------------------\n`;
+        ownerAlert += `💰 *Total Payment:* *₹${total}*\n\n`;
+        ownerAlert += `Please contact the customer for delivery verification.`;
+
+        await whatsappService.sendText(ownerPhone, ownerAlert);
+      }
+
+      // 2. Send Order Confirmation receipt to Customer (sender)
+      const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${total}\n*Delivering to:* ${address}`;
+      await whatsappService.sendText(phone, thankYouMessage);
+
+      // 3. Clear customer session cart
+      sessionService.clearCart(phone);
+
+    } catch (err) {
+      console.error('❌ Error processing webhook order request:', err);
+      await whatsappService.sendText(phone, "Sorry, we had an issue processing your order receipt, but the store owner has been notified.");
+    }
   },
 
   async handleWelcomeState(phone, type, data, session) {
