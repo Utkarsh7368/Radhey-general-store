@@ -144,26 +144,44 @@ const webhookController = {
     }
 
     try {
+      // Fetch catalog to get secure pricing
+      const catalogData = await sheetsService.getCatalog();
+      let itemsText = '';
+      let grandTotal = 0;
+      const verifiedCart = [];
+
+      for (const item of cart) {
+        const secureProduct = catalogData.productsMap[item.productId];
+        if (!secureProduct) {
+          return res.status(400).json({ error: `Product ID ${item.productId} not found in catalog.` });
+        }
+        
+        const price = secureProduct.price;
+        const variantDesc = secureProduct.variantName ? ` (${secureProduct.variantName})` : '';
+        const itemTotal = price * item.quantity;
+        grandTotal += itemTotal;
+        
+        itemsText += `${secureProduct.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
+        verifiedCart.push({
+          productId: item.productId,
+          productName: secureProduct.productName,
+          variantName: secureProduct.variantName,
+          price,
+          quantity: item.quantity
+        });
+      }
+
       // Fetch session and save details
       sessionService.saveSession(phone, {
         customerName: name,
         customerPhone: phone,
         address: address,
         location: location,
-        cart: cart // update cart in session
+        cart: verifiedCart // update cart in session with verified prices
       });
 
       const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
       const gpsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
-
-      let itemsText = '';
-      let grandTotal = 0;
-      cart.forEach((item, index) => {
-        const variantDesc = item.variantName ? ` (${item.variantName})` : '';
-        const itemTotal = item.price * item.quantity;
-        grandTotal += itemTotal;
-        itemsText += `${index + 1}. ${item.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
-      });
 
       // 1. Send Order Alert to Store Owner
       if (config.whatsapp.ownerTemplateName) {
@@ -204,7 +222,15 @@ const webhookController = {
       // 3. Clear customer cart session but save profile and address
       sessionService.clearCart(phone);
 
-      return res.status(200).json({ success: true, message: 'Order processed successfully.' });
+      const ownerUpiId = config.whatsapp.ownerUpiId || '919110170322@ybl';
+
+      return res.status(200).json({ 
+        success: true, 
+        message: 'Order processed successfully.',
+        grandTotal,
+        ownerUpiId,
+        orderId: Math.floor(100000 + Math.random() * 900000)
+      });
     } catch (err) {
       console.error('❌ Error in placeOrder endpoint:', err);
       return res.status(500).json({ error: 'Failed to process the order.' });

@@ -613,6 +613,147 @@
     .header-clear-btn:active {
       background-color: #ffcdd2;
     }
+
+    /* Payment Overlay styling */
+    .payment-overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(0,0,0,0.5);
+      backdrop-filter: blur(5px);
+      z-index: 300;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .payment-overlay.show {
+      display: flex;
+    }
+    .payment-card {
+      background-color: var(--card-bg);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .payment-header {
+      background-color: var(--primary);
+      color: white;
+      padding: 18px 20px;
+      text-align: center;
+    }
+    .payment-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .payment-content {
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    .payment-amount-box {
+      background-color: var(--bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      width: 100%;
+      text-align: center;
+      border: 1px solid var(--border);
+    }
+    .payment-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .payment-amount {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 4px;
+    }
+    .payment-order-id {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .payment-method-desc {
+      font-size: 0.9rem;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.4;
+    }
+    .upi-pay-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      background: linear-gradient(135deg, #097939 0%, #2e7d32 100%);
+      color: white;
+      text-decoration: none;
+      padding: 14px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 1rem;
+      text-align: center;
+      transition: all 0.2s;
+      box-shadow: 0 4px 10px rgba(46, 125, 50, 0.2);
+    }
+    .upi-pay-btn:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 5px rgba(46, 125, 50, 0.2);
+    }
+    .qr-code-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      width: 100%;
+    }
+    .qr-code-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .qr-code-img {
+      width: 180px;
+      height: 180px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+      background: white;
+    }
+    .qr-code-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-align: center;
+    }
+    .confirm-pay-btn {
+      width: 100%;
+      background-color: var(--accent);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: var(--radius);
+      font-weight: 600;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 4px;
+    }
+    .confirm-pay-btn:active {
+      transform: scale(0.98);
+    }
   </style>
 </head>
 <body>
@@ -707,6 +848,43 @@
     <div class="spinner"></div>
   </div>
 
+  <!-- Payment Overlay -->
+  <div class="payment-overlay" id="paymentOverlay">
+    <div class="payment-card">
+      <div class="payment-header">
+        <h2>Complete UPI Payment</h2>
+      </div>
+      <div class="payment-content">
+        <div class="payment-amount-box">
+          <div class="payment-label">Amount to Pay</div>
+          <div class="payment-amount" id="paymentAmountText">₹0</div>
+          <div class="payment-order-id" id="paymentOrderIdText">Order ID: #000000</div>
+        </div>
+
+        <div class="payment-method-desc">
+          Choose a payment method below to complete the transfer:
+        </div>
+
+        <!-- Mobile UPI Button -->
+        <a href="#" class="upi-pay-btn" id="upiPayBtn" target="_blank">
+          📱 Pay with any UPI App
+        </a>
+
+        <!-- Desktop QR Code -->
+        <div class="qr-code-container">
+          <div class="qr-code-title">Or Scan QR Code to Pay:</div>
+          <img src="" alt="UPI Payment QR Code" id="paymentQrCode" class="qr-code-img">
+          <div class="qr-code-desc">Open Google Pay, PhonePe, Paytm, or BHIM to scan</div>
+        </div>
+
+        <!-- Confirm Button -->
+        <button class="confirm-pay-btn" id="confirmPaymentBtn">
+          ✅ Confirm Payment &amp; Open WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- Success Screen -->
   <div class="success-screen" id="successScreen">
     <div class="success-icon">✓</div>
@@ -763,6 +941,14 @@
     const customerNameInput = document.getElementById('customerName');
     const deliveryAddressInput = document.getElementById('deliveryAddress');
     const headerClearCartBtn = document.getElementById('headerClearCartBtn');
+
+    // Payment Overlay Elements
+    const paymentOverlay = document.getElementById('paymentOverlay');
+    const paymentAmountText = document.getElementById('paymentAmountText');
+    const paymentOrderIdText = document.getElementById('paymentOrderIdText');
+    const upiPayBtn = document.getElementById('upiPayBtn');
+    const paymentQrCode = document.getElementById('paymentQrCode');
+    const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
  
     // Pre-fill phone if provided
     if (userPhone) {
@@ -1121,7 +1307,7 @@
     deliveryAddressInput.addEventListener('input', validateFormInputs);
 
     // Form Submission / Place Order
-    orderForm.addEventListener('submit', (e) => {
+    orderForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const payload = {
@@ -1136,40 +1322,58 @@
       localStorage.setItem(`profile_name_${payload.phone}`, payload.name);
       localStorage.setItem(`profile_address_${payload.phone}`, payload.address);
 
-      // Format items text
-      let itemsText = '';
-      let grandTotal = 0;
-      Object.values(cart).forEach((item, index) => {
-        const variantDesc = item.variantName ? ` (${item.variantName})` : '';
-        const itemTotal = item.price * item.quantity;
-        grandTotal += itemTotal;
-        itemsText += `${index + 1}. ${item.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
-      });
-
-      const gpsUrl = `https://maps.google.com/?q=${userLocation.latitude},${userLocation.longitude}`;
-
-      // Build the formatted message
-      let messageText = `🛍️ *NEW ORDER REQUEST*\n`;
-      messageText += `👤 *Name:* ${payload.name}\n`;
-      messageText += `📞 *Phone:* ${payload.phone}\n`;
-      messageText += `🏠 *Address:* ${payload.address}\n`;
-      messageText += `📍 *Location:* ${gpsUrl}\n\n`;
-      messageText += `*Items Ordered:*\n${itemsText.trim()}\n\n`;
-      messageText += `💰 *Total Payment:* ₹${grandTotal}`;
-
-      // Clear local storage cart and state
-      cart = {};
-      saveCartLocal();
-      refreshCartSummary();
-
       loadingOverlay.classList.add('show');
 
-      // Construct WhatsApp link
-      const cleanBotPhone = botPhone.replace(/[^0-9]/g, '');
-      const whatsappUrl = `https://wa.me/${cleanBotPhone}?text=${encodeURIComponent(messageText)}`;
-      
-      // Redirect
-      window.location.href = whatsappUrl;
+      try {
+        const response = await fetch('/api/place-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        loadingOverlay.classList.remove('show');
+
+        if (response.ok && result.success) {
+          // Populate UPI Payment parameters
+          paymentAmountText.textContent = `₹${result.grandTotal}`;
+          paymentOrderIdText.textContent = `Order ID: #${result.orderId}`;
+          
+          // Construct UPI payment URL
+          const upiUrl = `upi://pay?pa=${result.ownerUpiId}&pn=${encodeURIComponent("Radhey General Store")}&am=${result.grandTotal}&cu=INR&tn=${encodeURIComponent("Order " + result.orderId)}`;
+          
+          // Update pay button href
+          upiPayBtn.href = upiUrl;
+          
+          // Update QR Code image source using dynamic generator
+          paymentQrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiUrl)}`;
+
+          // Configure Confirm Payment Click Listener
+          confirmPaymentBtn.onclick = () => {
+            // Clear local storage cart
+            cart = {};
+            saveCartLocal();
+            refreshCartSummary();
+            
+            // Redirect back to WhatsApp bot with confirmation message
+            const cleanBotPhone = botPhone.replace(/[^0-9]/g, '');
+            const confirmMsg = `Hi, I have paid and confirmed my order #${result.orderId} of ₹${result.grandTotal}`;
+            window.location.href = `https://wa.me/${cleanBotPhone}?text=${encodeURIComponent(confirmMsg)}`;
+          };
+
+          // Hide checkout overlay and display payment overlay
+          checkoutOverlay.classList.remove('show');
+          paymentOverlay.classList.add('show');
+        } else {
+          alert('Failed to place order: ' + (result.error || 'Server error.'));
+        }
+      } catch (err) {
+        loadingOverlay.classList.remove('show');
+        console.error(err);
+        alert('Network error. Failed to place order. Please try again.');
+      }
     });
 
     // Load customer profile details from localStorage

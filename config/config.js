@@ -13,6 +13,7 @@ const config = {
     verifyToken: process.env.VERIFY_TOKEN || 'radhey_store_verify_token_123',
     ownerPhone: process.env.OWNER_PHONE,
     botPhone: process.env.BOT_PHONE || '919999999999',
+    ownerUpiId: process.env.OWNER_UPI_ID || null,
     ownerTemplateName: process.env.OWNER_TEMPLATE_NAME || null,
     ownerTemplateLang: process.env.OWNER_TEMPLATE_LANG || 'en',
     apiVersion: 'v19.0',
