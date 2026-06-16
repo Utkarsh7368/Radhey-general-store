@@ -625,7 +625,10 @@
   <!-- Sticky Footer Cart -->
   <div class="footer-cart" id="footerCart">
     <div class="cart-summary">
-      <h4 id="itemCount">0 items</h4>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <h4 id="itemCount">0 items</h4>
+        <button id="clearCartBtn" style="background: none; border: none; color: var(--accent); font-size: 0.8rem; cursor: pointer; text-decoration: underline; font-weight: 500;">Clear</button>
+      </div>
       <div class="cart-price" id="cartTotalPrice">₹0</div>
     </div>
     <button class="checkout-btn" id="goToCheckoutBtn">
@@ -729,11 +732,22 @@
     const customerPhoneInput = document.getElementById('customerPhone');
     const customerNameInput = document.getElementById('customerName');
     const deliveryAddressInput = document.getElementById('deliveryAddress');
-
+    const clearCartBtn = document.getElementById('clearCartBtn');
+ 
     // Pre-fill phone if provided
     if (userPhone) {
       customerPhoneInput.value = userPhone;
     }
+
+    // Clear Cart Click Listener
+    clearCartBtn.addEventListener('click', () => {
+      if (confirm('Are you sure you want to empty your cart?')) {
+        cart = {};
+        saveCartLocal();
+        refreshCartSummary();
+        renderCatalog();
+      }
+    });
 
     // Fetch Catalog from API
     async function loadCatalog() {
