@@ -4,6 +4,9 @@ const whatsappService = require('../services/whatsapp.service');
 const sessionService = require('../services/session.service');
 const sheetsService = require('../services/sheets.service');
 
+// Cache of recently processed message IDs to handle Meta retries
+const processedMessageIds = new Set();
+
 const webhookController = {
   /**
    * GET /webhook
@@ -31,6 +34,13 @@ const webhookController = {
    * Listens for real WhatsApp messages pushed from Meta APIs.
    */
   async receiveWebhook(req, res) {
+    // Auto-detect server URL if not configured in .env
+    if (!config.serverUrl && req.get('host')) {
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+      config.serverUrl = `${protocol}://${req.get('host')}`;
+      console.log(`📡 Auto-detected server public URL: ${config.serverUrl}`);
+    }
+
     const body = req.body;
 
     // Standard sanity check for Meta Webhook requests
@@ -43,6 +53,22 @@ const webhookController = {
       ) {
         const messageVal = body.entry[0].changes[0].value;
         const message = messageVal.messages[0];
+        
+        // Deduplicate retries from Meta
+        const messageId = message.id;
+        if (messageId) {
+          if (processedMessageIds.has(messageId)) {
+            console.log(`ℹ️ [DEDUPLICATE] Ignoring duplicate webhook for message ID: ${messageId}`);
+            return res.status(200).send('EVENT_RECEIVED');
+          }
+          processedMessageIds.add(messageId);
+          // Keep cache size bounded
+          if (processedMessageIds.size > 500) {
+            const oldestId = processedMessageIds.values().next().value;
+            processedMessageIds.delete(oldestId);
+          }
+        }
+
         const contact = messageVal.contacts ? messageVal.contacts[0] : null;
         
         const phone = message.from;
