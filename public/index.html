@@ -598,6 +598,21 @@
       padding: 40px 16px;
       color: var(--text-muted);
     }
+    .header-clear-btn {
+      background-color: #ffebee;
+      color: #c62828;
+      border: 1.5px solid #ffcdd2;
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .header-clear-btn:active {
+      background-color: #ffcdd2;
+    }
   </style>
 </head>
 <body>
@@ -611,6 +626,7 @@
           <div class="brand-subtitle">Grocery &amp; Daily Needs</div>
         </div>
       </div>
+      <button id="headerClearCartBtn" class="header-clear-btn" style="display: none;">Empty Cart</button>
     </div>
     <div class="search-bar">
       <input type="text" id="searchInput" placeholder="Search for products (e.g. Bread, Atta)...">
@@ -733,21 +749,25 @@
     const customerNameInput = document.getElementById('customerName');
     const deliveryAddressInput = document.getElementById('deliveryAddress');
     const clearCartBtn = document.getElementById('clearCartBtn');
+    const headerClearCartBtn = document.getElementById('headerClearCartBtn');
  
     // Pre-fill phone if provided
     if (userPhone) {
       customerPhoneInput.value = userPhone;
     }
 
-    // Clear Cart Click Listener
-    clearCartBtn.addEventListener('click', () => {
+    function clearCart() {
       if (confirm('Are you sure you want to empty your cart?')) {
         cart = {};
         saveCartLocal();
         refreshCartSummary();
         renderCatalog();
       }
-    });
+    }
+
+    // Clear Cart Click Listener
+    clearCartBtn.addEventListener('click', clearCart);
+    headerClearCartBtn.addEventListener('click', clearCart);
 
     // Fetch Catalog from API
     async function loadCatalog() {
@@ -981,8 +1001,10 @@
         itemCountText.textContent = `${totalCount} item${totalCount > 1 ? 's' : ''}`;
         cartTotalPriceText.textContent = `₹${totalPrice}`;
         footerCart.classList.add('show');
+        headerClearCartBtn.style.display = 'block';
       } else {
         footerCart.classList.remove('show');
+        headerClearCartBtn.style.display = 'none';
       }
     }
 
