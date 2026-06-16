@@ -27,6 +27,13 @@ const flowManager = {
           sessionService.saveSession(phone, session);
           return this.sendWelcome(phone);
         }
+
+        if ((textVal === 'contact' || textVal === 'support' || textVal === 'help') && !checkoutStates.includes(session.currentState)) {
+          const contactInfo = "📞 *Radhey General Store*\n\n📍 *Address:* Main Bazaar, Near Temple, Sector 4\n📱 *Call/WhatsApp:* +91 99999 99999\n⏰ *Hours:* 8:00 AM - 9:00 PM\n\nWe provide home delivery for orders above ₹100.";
+          const host = config.serverUrl || 'http://localhost:3000';
+          const catalogLink = `${host}/index.html?phone=${phone}`;
+          return whatsappService.sendUrlButton(phone, contactInfo, '🛍️ Open Catalog', catalogLink);
+        }
       }
 
       // State Router
@@ -91,33 +98,14 @@ const flowManager = {
     const host = config.serverUrl || 'http://localhost:3000';
     const catalogLink = `${host}/index.html?phone=${phone}`;
 
-    const body = `Welcome to *Radhey General Store*! 🛍️\n\nYour local Grocery & Daily Needs Store. Browse our catalog, select items, and place your order in one go on your phone!\n\n👉 *Open Catalog:* ${catalogLink}`;
-    const buttons = [
-      { id: 'welcome_browse', title: '🛍️ Get Catalog Link' },
-      { id: 'welcome_contact', title: '📞 Contact Store' }
-    ];
-    await whatsappService.sendButtons(phone, body, buttons);
+    const body = `Welcome to *Radhey General Store*! 🛍️\n\nYour local Grocery & Daily Needs Store. Browse our catalog, select items, and place your order in one go on your phone! Click the button below to get started:\n\n*(Type "contact" anytime for store details)*`;
+    await whatsappService.sendUrlButton(phone, body, '🛍️ Open Catalog', catalogLink);
   },
 
   async handleWelcomeState(phone, type, data, session) {
-    if (type === 'button_reply') {
-      if (data === 'welcome_browse') {
-        const host = config.serverUrl || 'http://localhost:3000';
-        const catalogLink = `${host}/index.html?phone=${phone}`;
-        await whatsappService.sendText(phone, `Click the link below to open the grocery catalog and place your order:\n\n👉 ${catalogLink}`);
-      } else if (data === 'welcome_contact') {
-        const contactInfo = "📞 *Radhey General Store*\n\n📍 *Address:* Main Bazaar, Near Temple, Sector 4\n📱 *Call/WhatsApp:* +91 99999 99999\n⏰ *Hours:* 8:00 AM - 9:00 PM\n\nWe provide home delivery for orders above ₹100.";
-        const buttons = [
-          { id: 'welcome_menu', title: '🏠 Main Menu' }
-        ];
-        await whatsappService.sendButtons(phone, contactInfo, buttons);
-      } else if (data === 'welcome_menu') {
-        await this.sendWelcome(phone);
-      }
-    } else {
-      // Treat text or other messages as a reset to Welcome
-      await this.sendWelcome(phone);
-    }
+    // Since there are no quick reply buttons in sendWelcome anymore,
+    // any unrecognized message in WELCOME state will just prompt them with the welcome card.
+    await this.sendWelcome(phone);
   },
 
   async sendCategoriesList(phone) {

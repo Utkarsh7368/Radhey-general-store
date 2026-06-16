@@ -636,7 +636,12 @@
   <!-- Checkout Overlay -->
   <div class="checkout-overlay" id="checkoutOverlay">
     <div class="checkout-header">
-      <button class="back-arrow-btn" id="backToCatalogBtn">🡠</button>
+      <button class="back-arrow-btn" id="backToCatalogBtn" aria-label="Back to Catalog">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="19" y1="12" x2="5" y2="12"></line>
+          <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+      </button>
       <h2>Checkout Details</h2>
     </div>
     <div class="checkout-content">
@@ -824,6 +829,8 @@
             // Dropdown selection for multiple variants
             const select = document.createElement('select');
             select.className = 'variant-selector';
+            select.style.marginTop = '6px';
+            select.style.display = 'block';
             prod.variants.forEach(v => {
               const opt = document.createElement('option');
               opt.value = v.productId;
@@ -842,7 +849,7 @@
               updateQuantityControls(row, prod, selectedVariant);
             });
 
-            wrapper.appendChild(select);
+            info.appendChild(select);
             wrapper.appendChild(priceText);
           } else {
             // Flat price for single variant
@@ -1075,6 +1082,10 @@
         cart: Object.values(cart)
       };
 
+      // Save profile details to localStorage for future use
+      localStorage.setItem(`profile_name_${payload.phone}`, payload.name);
+      localStorage.setItem(`profile_address_${payload.phone}`, payload.address);
+
       loadingOverlay.classList.add('show');
 
       try {
@@ -1090,7 +1101,7 @@
         loadingOverlay.classList.remove('show');
 
         if (response.ok && result.success) {
-          // Clear local storage and state
+          // Clear local storage cart and state
           cart = {};
           saveCartLocal();
           successScreen.classList.add('show');
@@ -1104,8 +1115,21 @@
       }
     });
 
+    // Load customer profile details from localStorage
+    function loadProfileLocal() {
+      const savedName = localStorage.getItem(`profile_name_${userPhone}`);
+      const savedAddress = localStorage.getItem(`profile_address_${userPhone}`);
+      if (savedName) {
+        customerNameInput.value = savedName;
+      }
+      if (savedAddress) {
+        deliveryAddressInput.value = savedAddress;
+      }
+    }
+
     // Start App Load
     loadCartLocal();
+    loadProfileLocal();
     refreshCartSummary();
     loadCatalog();
   </script>

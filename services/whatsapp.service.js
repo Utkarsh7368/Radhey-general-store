@@ -220,6 +220,36 @@ const whatsappService = {
     }
 
     return postToMeta(payload);
+  },
+
+  /**
+   * Sends an interactive message with a Call to Action (CTA) URL link button.
+   * @param {string} to - Recipient phone number
+   * @param {string} bodyText - Main text body
+   * @param {string} btnTitle - Text to display on the link button
+   * @param {string} url - Destination URL
+   */
+  async sendUrlButton(to, bodyText, btnTitle, url) {
+    const payload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to,
+      type: 'interactive',
+      interactive: {
+        type: 'cta_url',
+        body: {
+          text: bodyText
+        },
+        action: {
+          name: 'cta_url',
+          parameters: {
+            display_text: btnTitle.substring(0, 20), // Max 20 chars
+            url: url
+          }
+        }
+      }
+    };
+    return postToMeta(payload);
   }
 };
 
