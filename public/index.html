@@ -917,11 +917,6 @@
       <div class="amount-title">Total Amount to Pay</div>
       <div class="payment-amount-large" id="paymentAmountText">₹0</div>
 
-      <!-- Mobile UPI Button -->
-      <a href="#" class="payment-upi-button" id="upiPayBtn" target="_blank">
-        📱 Pay with any UPI App (GPay/PhonePe/Paytm)
-      </a>
-
       <!-- Copy UPI ID Fallback -->
       <div class="copy-upi-container">
         <span class="upi-label-text">UPI ID to pay:</span>
@@ -1008,7 +1003,6 @@
     const paymentOverlay = document.getElementById('paymentOverlay');
     const paymentAmountText = document.getElementById('paymentAmountText');
     const paymentOrderIdText = document.getElementById('paymentOrderIdText');
-    const upiPayBtn = document.getElementById('upiPayBtn');
     const paymentQrCode = document.getElementById('paymentQrCode');
     const confirmPaymentBtn = document.getElementById('confirmPaymentBtn');
     const paymentUpiIdText = document.getElementById('paymentUpiIdText');
@@ -1409,14 +1403,8 @@
           const cleanUpiId = (result.ownerUpiId || '').trim().replace(/\s+/g, '');
           paymentUpiIdText.textContent = cleanUpiId;
           
-          // Construct P2P UPI URL for mobile apps (amount-free to prevent NPCI security blocks)
-          const upiUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&cu=INR`;
-          
-          // Construct UPI URL for QR code (amount-prefilled, scanning is safe from NPCI blocks)
-          const upiQrUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&am=${result.grandTotal}&cu=INR`;
-          
-          // Update pay button href
-          upiPayBtn.href = upiUrl;
+          // Construct UPI URL for QR code (amount-free to comply with NPCI P2P security rules)
+          const upiQrUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&cu=INR`;
           
           // Update QR Code image source using dynamic generator
           paymentQrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiQrUrl)}`;
