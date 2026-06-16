@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radhey General Store - Order Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-light: #e8f5e9;
+      --accent: #ef6c00;
+      --text: #2c3e50;
+      --text-muted: #7f8c8d;
+      --bg: #f8f9fa;
+      --card-bg: #ffffff;
+      --border: #eaedf0;
+      --shadow: 0 4px 12px rgba(0,0,0,0.05);
+      --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 90px;
+    }
+
+    header {
+      background-color: var(--card-bg);
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .brand-subtitle {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: -2px;
+    }
+
+    .search-bar {
+      width: 100%;
+      position: relative;
+    }
+
+    .search-bar input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background-color: var(--bg);
+      font-family: inherit;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--primary);
+      background-color: var(--card-bg);
+      box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 16px auto;
+      padding: 0 16px;
+    }
+
+    /* Accordion Category Panel */
+    .category-accordion {
+      margin-bottom: 12px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+    }
+
+    .category-header {
+      padding: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      background-color: var(--card-bg);
+      transition: background-color 0.2s;
+    }
+
+    .category-header:hover {
+      background-color: var(--bg);
+    }
+
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 1.05rem;
+    }
+
+    .category-title span.hindi {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .category-arrow {
+      font-size: 0.9rem;
+      transition: transform 0.3s;
+      color: var(--text-muted);
+    }
+
+    .category-accordion.active .category-arrow {
+      transform: rotate(180deg);
+    }
+
+    .category-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+      border-top: 0 solid var(--border);
+    }
+
+    .category-accordion.active .category-content {
+      max-height: 2000px;
+      border-top-width: 1px;
+    }
+
+    /* Product Item Styles */
+    .product-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .product-row:last-child {
+      border-bottom: none;
+    }
+
+    .product-info {
+      flex: 1;
+      padding-right: 12px;
+    }
+
+    .product-name {
+      font-weight: 500;
+      font-size: 0.95rem;
+      margin-bottom: 4px;
+    }
+
+    .product-controls-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .variant-selector {
+      font-family: inherit;
+      padding: 6px 8px;
+      font-size: 0.85rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background-color: var(--bg);
+      color: var(--text);
+      outline: none;
+    }
+
+    .product-price {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.95rem;
+      min-width: 50px;
+      text-align: right;
+    }
+
+    /* Counter Buttons */
+    .quantity-controller {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--primary);
+      border-radius: 20px;
+      overflow: hidden;
+      background-color: var(--card-bg);
+      min-width: 80px;
+      justify-content: space-between;
+      height: 32px;
+    }
+
+    .qty-btn {
+      width: 28px;
+      height: 100%;
+      border: none;
+      background: none;
+      color: var(--primary);
+      font-size: 1.1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.1s;
+    }
+
+    .qty-btn:active {
+      background-color: var(--primary-light);
+    }
+
+    .qty-val {
+      font-size: 0.9rem;
+      font-weight: 600;
+      width: 24px;
+      text-align: center;
+    }
+
+    .add-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      height: 32px;
+      transition: opacity 0.2s;
+    }
+
+    .add-btn:active {
+      opacity: 0.9;
+    }
+
+    /* Sticky Bottom Footer */
+    .footer-cart {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      border-top: 1px solid var(--border);
+      padding: 16px;
+      box-shadow: 0 -8px 20px rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 100;
+      max-width: 600px;
+      margin: 0 auto;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+    }
+
+    .footer-cart.show {
+      transform: translateY(0);
+    }
+
+    .cart-summary h4 {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    .cart-summary .cart-price {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .checkout-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: var(--radius);
+      padding: 12px 24px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background-color 0.2s;
+    }
+
+    .checkout-btn:hover {
+      background-color: #256428;
+    }
+
+    /* Checkout Overlay View */
+    .checkout-overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--bg);
+      z-index: 200;
+      overflow-y: auto;
+      transform: translateX(100%);
+      transition: transform 0.3s ease-out;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .checkout-overlay.show {
+      transform: translateX(0);
+    }
+
+    .checkout-header {
+      background-color: var(--card-bg);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .back-arrow-btn {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+    }
+
+    .checkout-header h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .checkout-content {
+      padding: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 6px;
+      color: var(--text);
+    }
+
+    .form-group input, .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus, .form-group textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .location-btn {
+      width: 100%;
+      background-color: var(--card-bg);
+      border: 2px dashed var(--primary);
+      color: var(--primary);
+      padding: 12px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      transition: background-color 0.2s;
+    }
+
+    .location-btn:active {
+      background-color: var(--primary-light);
+    }
+
+    .location-status {
+      font-size: 0.85rem;
+      text-align: center;
+      color: var(--text-muted);
+      margin-top: -6px;
+      margin-bottom: 16px;
+    }
+
+    .location-status.success {
+      color: var(--primary);
+      font-weight: 500;
+    }
+
+    .order-summary-card {
+      background-color: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 16px;
+      border: 1px solid var(--border);
+      margin-bottom: 24px;
+    }
+
+    .order-summary-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .summary-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .summary-item.total {
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-top: 1px dashed var(--border);
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+
+    .submit-order-btn {
+      width: 100%;
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+
+    .submit-order-btn:hover {
+      background-color: #256428;
+    }
+
+    .submit-order-btn:disabled {
+      background-color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* Success Page */
+    .success-screen {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: var(--card-bg);
+      z-index: 300;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .success-screen.show {
+      display: flex;
+    }
+
+    .success-icon {
+      font-size: 5rem;
+      color: var(--primary);
+      margin-bottom: 16px;
+      animation: pop 0.4s ease-out;
+    }
+
+    .success-screen h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--primary);
+    }
+
+    .success-screen p {
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      font-size: 0.95rem;
+    }
+
+    .close-window-btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: var(--radius);
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.6); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    /* Loading Spinner */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background-color: rgba(255,255,255,0.7);
+      z-index: 400;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .loading-overlay.show {
+      display: flex;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* Fallback and Empty UI */
+    .empty-state {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="header-container">
+      <div class="brand">
+        <div>
+          <h1>Radhey General Store</h1>
+          <div class="brand-subtitle">Grocery &amp; Daily Needs</div>
+        </div>
+      </div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search for products (e.g. Bread, Atta)...">
+    </div>
+  </header>
+
+  <!-- Product Catalog -->
+  <div class="container" id="catalogContainer">
+    <div class="loading-state empty-state">Loading product catalog...</div>
+  </div>
+
+  <!-- Sticky Footer Cart -->
+  <div class="footer-cart" id="footerCart">
+    <div class="cart-summary">
+      <h4 id="itemCount">0 items</h4>
+      <div class="cart-price" id="cartTotalPrice">₹0</div>
+    </div>
+    <button class="checkout-btn" id="goToCheckoutBtn">
+      Checkout ➔
+    </button>
+  </div>
+
+  <!-- Checkout Overlay -->
+  <div class="checkout-overlay" id="checkoutOverlay">
+    <div class="checkout-header">
+      <button class="back-arrow-btn" id="backToCatalogBtn">🡠</button>
+      <h2>Checkout Details</h2>
+    </div>
+    <div class="checkout-content">
+      <form id="orderForm">
+        <div class="form-group">
+          <label for="customerName">Your Name *</label>
+          <input type="text" id="customerName" placeholder="Enter your full name" required>
+        </div>
+        <div class="form-group">
+          <label for="customerPhone">WhatsApp Phone Number *</label>
+          <input type="tel" id="customerPhone" placeholder="e.g. 919999999999" required>
+        </div>
+        <div class="form-group">
+          <label for="deliveryAddress">Delivery Address *</label>
+          <textarea id="deliveryAddress" placeholder="Flat/House No, Building, Area/Landmark" required></textarea>
+        </div>
+
+        <!-- GPS Geolocation -->
+        <button type="button" class="location-btn" id="shareLocationBtn">
+          📍 Share GPS Location *
+        </button>
+        <div class="location-status" id="locationStatus">
+          Location coordinates not shared yet (Required)
+        </div>
+
+        <!-- Order Summary -->
+        <div class="order-summary-card">
+          <h3>Items Summary</h3>
+          <div id="checkoutItemsList">
+            <!-- Populated dynamically -->
+          </div>
+          <div class="summary-item total">
+            <span>Grand Total</span>
+            <span id="checkoutTotalPrice">₹0</span>
+          </div>
+        </div>
+
+        <button type="submit" class="submit-order-btn" id="submitOrderBtn" disabled>
+          Confirm &amp; Place Order
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Success Screen -->
+  <div class="success-screen" id="successScreen">
+    <div class="success-icon">✓</div>
+    <h2>Order Placed!</h2>
+    <p>Your order has been sent successfully to Radhey General Store. You will receive a receipt on WhatsApp shortly.</p>
+    <button class="close-window-btn" onclick="window.close()">Return to WhatsApp</button>
+  </div>
+
+  <script>
+    // State Variables
+    let catalog = null;
+    let cart = {}; // { productId: { ... } }
+    let userLocation = { latitude: null, longitude: null };
+
+    // Extract query parameters (like phone number)
+    const urlParams = new URLSearchParams(window.location.search);
+    const userPhone = urlParams.get('phone') || '';
+
+    // Elements
+    const catalogContainer = document.getElementById('catalogContainer');
+    const searchInput = document.getElementById('searchInput');
+    const footerCart = document.getElementById('footerCart');
+    const itemCountText = document.getElementById('itemCount');
+    const cartTotalPriceText = document.getElementById('cartTotalPrice');
+    const goToCheckoutBtn = document.getElementById('goToCheckoutBtn');
+    const checkoutOverlay = document.getElementById('checkoutOverlay');
+    const backToCatalogBtn = document.getElementById('backToCatalogBtn');
+    const shareLocationBtn = document.getElementById('shareLocationBtn');
+    const locationStatusText = document.getElementById('locationStatus');
+    const checkoutItemsList = document.getElementById('checkoutItemsList');
+    const checkoutTotalPriceText = document.getElementById('checkoutTotalPrice');
+    const submitOrderBtn = document.getElementById('submitOrderBtn');
+    const orderForm = document.getElementById('orderForm');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const successScreen = document.getElementById('successScreen');
+    const customerPhoneInput = document.getElementById('customerPhone');
+    const customerNameInput = document.getElementById('customerName');
+    const deliveryAddressInput = document.getElementById('deliveryAddress');
+
+    // Pre-fill phone if provided
+    if (userPhone) {
+      customerPhoneInput.value = userPhone;
+    }
+
+    // Fetch Catalog from API
+    async function loadCatalog() {
+      try {
+        const res = await fetch('/api/catalog');
+        if (!res.ok) throw new Error('API failed');
+        catalog = await res.json();
+        renderCatalog();
+      } catch (err) {
+        console.error('Failed to load catalog:', err);
+        catalogContainer.innerHTML = '<div class="empty-state">Failed to load catalog. Please check connection.</div>';
+      }
+    }
+
+    // Render Catalog
+    function renderCatalog(filterText = '') {
+      if (!catalog || catalog.categories.length === 0) {
+        catalogContainer.innerHTML = '<div class="empty-state">No active categories found.</div>';
+        return;
+      }
+
+      catalogContainer.innerHTML = '';
+      const filter = filterText.toLowerCase().trim();
+
+      catalog.categories.forEach(cat => {
+        const products = catalog.productsGrouped[cat.id] || [];
+        
+        // Filter products matching search
+        const filteredProducts = products.filter(p => {
+          return p.name.toLowerCase().includes(filter);
+        });
+
+        // Skip category if search filter is active and no products match
+        if (filter && filteredProducts.length === 0) return;
+
+        // Create accordion panel
+        const accordion = document.createElement('div');
+        accordion.className = 'category-accordion';
+        // Auto-expand if user is searching
+        if (filter) {
+          accordion.classList.add('active');
+        }
+
+        // Header
+        const header = document.createElement('div');
+        header.className = 'category-header';
+        
+        // Parse Hindi translation brackets if present
+        const match = cat.name.match(/(.+?)\s*\((.+?)\)/);
+        let englishTitle = cat.name;
+        let hindiSubtitle = '';
+        if (match) {
+          englishTitle = match[1].trim();
+          hindiSubtitle = ` <span class="hindi">(${match[2].trim()})</span>`;
+        }
+
+        header.innerHTML = `
+          <div class="category-title">
+            <span>${cat.emoji || '📦'}</span>
+            <div>
+              ${englishTitle}${hindiSubtitle}
+            </div>
+          </div>
+          <span class="category-arrow">▼</span>
+        `;
+
+        header.addEventListener('click', () => {
+          accordion.classList.toggle('active');
+        });
+
+        // Content (Products List)
+        const content = document.createElement('div');
+        content.className = 'category-content';
+
+        const listToRender = filter ? filteredProducts : products;
+
+        listToRender.forEach(prod => {
+          const row = document.createElement('div');
+          row.className = 'product-row';
+
+          // Info Column
+          const info = document.createElement('div');
+          info.className = 'product-info';
+          info.innerHTML = `<div class="product-name">${prod.name}</div>`;
+
+          // Variants and price
+          const wrapper = document.createElement('div');
+          wrapper.className = 'product-controls-wrapper';
+
+          let selectedVariant = prod.variants[0];
+          
+          if (prod.variants.length > 1) {
+            // Dropdown selection for multiple variants
+            const select = document.createElement('select');
+            select.className = 'variant-selector';
+            prod.variants.forEach(v => {
+              const opt = document.createElement('option');
+              opt.value = v.productId;
+              opt.textContent = v.variantName;
+              select.appendChild(opt);
+            });
+
+            const priceText = document.createElement('span');
+            priceText.className = 'product-price';
+            priceText.textContent = `₹${selectedVariant.price}`;
+
+            select.addEventListener('change', (e) => {
+              const vId = e.target.value;
+              selectedVariant = prod.variants.find(v => v.productId === vId);
+              priceText.textContent = `₹${selectedVariant.price}`;
+              updateQuantityControls(row, prod, selectedVariant);
+            });
+
+            wrapper.appendChild(select);
+            wrapper.appendChild(priceText);
+          } else {
+            // Flat price for single variant
+            const label = selectedVariant.variantName ? ` (${selectedVariant.variantName})` : '';
+            info.innerHTML = `
+              <div class="product-name">${prod.name}</div>
+              <div style="font-size: 0.8rem; color: var(--text-muted)">${label}</div>
+            `;
+            const priceText = document.createElement('span');
+            priceText.className = 'product-price';
+            priceText.textContent = `₹${selectedVariant.price}`;
+            wrapper.appendChild(priceText);
+          }
+
+          // Counter Column
+          const counterCell = document.createElement('div');
+          counterCell.className = 'counter-container';
+          wrapper.appendChild(counterCell);
+
+          row.appendChild(info);
+          row.appendChild(wrapper);
+          content.appendChild(row);
+
+          // Render proper counter buttons
+          function updateCounterView() {
+            const inCart = cart[selectedVariant.productId];
+            counterCell.innerHTML = '';
+            
+            if (inCart && inCart.quantity > 0) {
+              counterCell.innerHTML = `
+                <div class="quantity-controller">
+                  <button class="qty-btn minus-btn">-</button>
+                  <span class="qty-val">${inCart.quantity}</span>
+                  <button class="qty-btn plus-btn">+</button>
+                </div>
+              `;
+              
+              counterCell.querySelector('.minus-btn').addEventListener('click', () => {
+                updateCart(prod, selectedVariant, -1);
+                updateCounterView();
+              });
+              counterCell.querySelector('.plus-btn').addEventListener('click', () => {
+                updateCart(prod, selectedVariant, 1);
+                updateCounterView();
+              });
+            } else {
+              counterCell.innerHTML = `<button class="add-btn">+ Add</button>`;
+              counterCell.querySelector('.add-btn').addEventListener('click', () => {
+                updateCart(prod, selectedVariant, 1);
+                updateCounterView();
+              });
+            }
+          }
+
+          // Initial Render of Row Counters
+          updateCounterView();
+
+          // Link select change trigger with counter updates
+          function updateQuantityControls(rowEl, p, v) {
+            updateCounterView();
+          }
+        });
+
+        accordion.appendChild(header);
+        accordion.appendChild(content);
+        catalogContainer.appendChild(accordion);
+      });
+    }
+
+    // Update Cart State
+    function updateCart(product, variant, change) {
+      const pId = variant.productId;
+      if (!cart[pId]) {
+        cart[pId] = {
+          productId: pId,
+          productName: product.name,
+          variantName: variant.variantName,
+          price: variant.price,
+          quantity: 0
+        };
+      }
+
+      cart[pId].quantity += change;
+
+      if (cart[pId].quantity <= 0) {
+        delete cart[pId];
+      }
+
+      saveCartLocal();
+      refreshCartSummary();
+    }
+
+    // Save Cart Local Storage
+    function saveCartLocal() {
+      localStorage.setItem(`cart_${userPhone}`, JSON.stringify(cart));
+    }
+
+    // Load Cart from Local Storage
+    function loadCartLocal() {
+      const saved = localStorage.getItem(`cart_${userPhone}`);
+      if (saved) {
+        try {
+          cart = JSON.parse(saved);
+        } catch(e) {}
+      }
+    }
+
+    // Refresh Cart Summary in footer
+    function refreshCartSummary() {
+      const items = Object.values(cart);
+      const totalCount = items.reduce((acc, curr) => acc + curr.quantity, 0);
+      const totalPrice = items.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
+
+      if (totalCount > 0) {
+        itemCountText.textContent = `${totalCount} item${totalCount > 1 ? 's' : ''}`;
+        cartTotalPriceText.textContent = `₹${totalPrice}`;
+        footerCart.classList.add('show');
+      } else {
+        footerCart.classList.remove('show');
+      }
+    }
+
+    // Search Filter handler
+    searchInput.addEventListener('input', (e) => {
+      renderCatalog(e.target.value);
+    });
+
+    // Go to Checkout View
+    goToCheckoutBtn.addEventListener('click', () => {
+      renderCheckoutSummary();
+      checkoutOverlay.classList.add('show');
+    });
+
+    backToCatalogBtn.addEventListener('click', () => {
+      checkoutOverlay.classList.remove('show');
+    });
+
+    // Render Order Items in Checkout Modal
+    function renderCheckoutSummary() {
+      checkoutItemsList.innerHTML = '';
+      const items = Object.values(cart);
+      const totalPrice = items.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
+
+      items.forEach(item => {
+        const itemTotal = item.price * item.quantity;
+        const div = document.createElement('div');
+        div.className = 'summary-item';
+        const label = item.variantName ? ` (${item.variantName})` : '';
+        div.innerHTML = `
+          <span>${item.productName}${label} x ${item.quantity}</span>
+          <span>₹${itemTotal}</span>
+        `;
+        checkoutItemsList.appendChild(div);
+      });
+
+      checkoutTotalPriceText.textContent = `₹${totalPrice}`;
+      validateFormInputs();
+    }
+
+    // Geolocation Handling
+    shareLocationBtn.addEventListener('click', () => {
+      shareLocationBtn.textContent = '🔄 Accessing GPS...';
+      shareLocationBtn.disabled = true;
+
+      if (!navigator.geolocation) {
+        alert('Geolocation is not supported by your browser.');
+        resetLocationBtn();
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          userLocation.latitude = position.coords.latitude;
+          userLocation.longitude = position.coords.longitude;
+          
+          locationStatusText.textContent = `✅ GPS Coordinates Shared (${userLocation.latitude.toFixed(4)}, ${userLocation.longitude.toFixed(4)})`;
+          locationStatusText.className = 'location-status success';
+          
+          shareLocationBtn.textContent = '✅ Location Saved';
+          shareLocationBtn.style.borderColor = 'var(--primary)';
+          shareLocationBtn.style.color = 'var(--primary)';
+          shareLocationBtn.disabled = false;
+          
+          validateFormInputs();
+        },
+        (error) => {
+          console.error(error);
+          alert('Failed to retrieve location. Please grant permission when requested.');
+          resetLocationBtn();
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    });
+
+    function resetLocationBtn() {
+      shareLocationBtn.textContent = '📍 Share GPS Location *';
+      shareLocationBtn.disabled = false;
+      locationStatusText.textContent = 'Location coordinates not shared yet (Required)';
+      locationStatusText.className = 'location-status';
+    }
+
+    // Form inputs validation to enable submit button
+    function validateFormInputs() {
+      const name = customerNameInput.value.trim();
+      const phone = customerPhoneInput.value.trim();
+      const addr = deliveryAddressInput.value.trim();
+      const hasLocation = userLocation.latitude !== null && userLocation.longitude !== null;
+      const hasItems = Object.keys(cart).length > 0;
+
+      if (name && phone && addr && hasLocation && hasItems) {
+        submitOrderBtn.disabled = false;
+      } else {
+        submitOrderBtn.disabled = true;
+      }
+    }
+
+    customerNameInput.addEventListener('input', validateFormInputs);
+    customerPhoneInput.addEventListener('input', validateFormInputs);
+    deliveryAddressInput.addEventListener('input', validateFormInputs);
+
+    // Form Submission / Place Order
+    orderForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const payload = {
+        phone: customerPhoneInput.value.trim(),
+        name: customerNameInput.value.trim(),
+        address: deliveryAddressInput.value.trim(),
+        location: userLocation,
+        cart: Object.values(cart)
+      };
+
+      loadingOverlay.classList.add('show');
+
+      try {
+        const response = await fetch('/api/place-order', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json();
+        loadingOverlay.classList.remove('show');
+
+        if (response.ok && result.success) {
+          // Clear local storage and state
+          cart = {};
+          saveCartLocal();
+          successScreen.classList.add('show');
+        } else {
+          alert('Failed to place order: ' + (result.error || 'Server error.'));
+        }
+      } catch (err) {
+        loadingOverlay.classList.remove('show');
+        console.error(err);
+        alert('Network error. Failed to place order. Please try again.');
+      }
+    });
+
+    // Start App Load
+    loadCartLocal();
+    refreshCartSummary();
+    loadCatalog();
+  </script>
+</body>
+</html>

@@ -6,6 +6,7 @@ dotenv.config();
 
 const config = {
   port: process.env.PORT || 3000,
+  serverUrl: process.env.SERVER_URL || null,
   whatsapp: {
     token: process.env.WHATSAPP_TOKEN,
     phoneNumberId: process.env.PHONE_NUMBER_ID,

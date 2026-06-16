@@ -2,6 +2,7 @@ const config = require('../config/config');
 const flowManager = require('../services/flow.manager');
 const whatsappService = require('../services/whatsapp.service');
 const sessionService = require('../services/session.service');
+const sheetsService = require('../services/sheets.service');
 
 const webhookController = {
   /**
@@ -85,6 +86,99 @@ const webhookController = {
     } else {
       // Return 404 if event is not from WhatsApp API
       return res.sendStatus(404);
+    }
+  },
+
+  /**
+   * GET /api/catalog
+   * Fetches the inventory catalog (categories and products) from Sheets/Local cache.
+   */
+  async getCatalog(req, res) {
+    try {
+      const catalog = await sheetsService.getCatalog();
+      return res.json(catalog);
+    } catch (err) {
+      console.error('❌ Error fetching catalog via API:', err);
+      return res.status(500).json({ error: 'Failed to load catalog.' });
+    }
+  },
+
+  /**
+   * POST /api/place-order
+   * Places an order from the Web Catalog, notifies owner and customer.
+   */
+  async placeOrder(req, res) {
+    const { phone, name, address, location, cart } = req.body;
+
+    if (!phone || !name || !address || !location || !cart || !Array.isArray(cart) || cart.length === 0) {
+      return res.status(400).json({ error: 'Invalid order payload. Missing required fields.' });
+    }
+
+    try {
+      // Fetch session and save details
+      sessionService.saveSession(phone, {
+        customerName: name,
+        customerPhone: phone,
+        address: address,
+        location: location,
+        cart: cart // update cart in session
+      });
+
+      const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
+      const gpsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+
+      let itemsText = '';
+      let grandTotal = 0;
+      cart.forEach((item, index) => {
+        const variantDesc = item.variantName ? ` (${item.variantName})` : '';
+        const itemTotal = item.price * item.quantity;
+        grandTotal += itemTotal;
+        itemsText += `${index + 1}. ${item.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
+      });
+
+      // 1. Send Order Alert to Store Owner
+      if (config.whatsapp.ownerTemplateName) {
+        const bodyParams = [
+          name,
+          phone,
+          address,
+          gpsUrl,
+          itemsText.trim(),
+          `₹${grandTotal}`
+        ];
+        await whatsappService.sendTemplate(
+          ownerPhone,
+          config.whatsapp.ownerTemplateName,
+          config.whatsapp.ownerTemplateLang,
+          bodyParams
+        );
+      } else {
+        let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
+        ownerAlert += `Radhey General Store\n`;
+        ownerAlert += `--------------------------------\n`;
+        ownerAlert += `👤 *Customer:* ${name}\n`;
+        ownerAlert += `📞 *Phone:* ${phone}\n`;
+        ownerAlert += `🏠 *Address:* ${address}\n`;
+        ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+        ownerAlert += `*Items:*\n${itemsText}`;
+        ownerAlert += `--------------------------------\n`;
+        ownerAlert += `💰 *Total Payment:* *₹${grandTotal}*\n\n`;
+        ownerAlert += `Please contact the customer for delivery verification.`;
+
+        await whatsappService.sendText(ownerPhone, ownerAlert);
+      }
+
+      // 2. Send Order Confirmation receipt to Customer
+      const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal}\n*Delivering to:* ${address}`;
+      await whatsappService.sendText(phone, thankYouMessage);
+
+      // 3. Clear customer cart session but save profile and address
+      sessionService.clearCart(phone);
+
+      return res.status(200).json({ success: true, message: 'Order processed successfully.' });
+    } catch (err) {
+      console.error('❌ Error in placeOrder endpoint:', err);
+      return res.status(500).json({ error: 'Failed to process the order.' });
     }
   }
 };

@@ -88,10 +88,12 @@ const flowManager = {
   // ==========================================
 
   async sendWelcome(phone) {
-    const body = "Welcome to *Radhey General Store*! 🛍️\n\nYour local Grocery & Daily Needs Store. Order your items easily without typing!\n\nSelect an option below to begin:";
+    const host = config.serverUrl || 'http://localhost:3000';
+    const catalogLink = `${host}/index.html?phone=${phone}`;
+
+    const body = `Welcome to *Radhey General Store*! 🛍️\n\nYour local Grocery & Daily Needs Store. Browse our catalog, select items, and place your order in one go on your phone!\n\n👉 *Open Catalog:* ${catalogLink}`;
     const buttons = [
-      { id: 'welcome_browse', title: '🛍️ Browse Catalog' },
-      { id: 'welcome_cart', title: '🛒 View Cart' },
+      { id: 'welcome_browse', title: '🛍️ Get Catalog Link' },
       { id: 'welcome_contact', title: '📞 Contact Store' }
     ];
     await whatsappService.sendButtons(phone, body, buttons);
@@ -100,17 +102,12 @@ const flowManager = {
   async handleWelcomeState(phone, type, data, session) {
     if (type === 'button_reply') {
       if (data === 'welcome_browse') {
-        session.currentState = 'SELECT_CATEGORY';
-        sessionService.saveSession(phone, session);
-        await this.sendCategoriesList(phone);
-      } else if (data === 'welcome_cart') {
-        session.currentState = 'CART';
-        sessionService.saveSession(phone, session);
-        await this.sendCartSummary(phone, session);
+        const host = config.serverUrl || 'http://localhost:3000';
+        const catalogLink = `${host}/index.html?phone=${phone}`;
+        await whatsappService.sendText(phone, `Click the link below to open the grocery catalog and place your order:\n\n👉 ${catalogLink}`);
       } else if (data === 'welcome_contact') {
         const contactInfo = "📞 *Radhey General Store*\n\n📍 *Address:* Main Bazaar, Near Temple, Sector 4\n📱 *Call/WhatsApp:* +91 99999 99999\n⏰ *Hours:* 8:00 AM - 9:00 PM\n\nWe provide home delivery for orders above ₹100.";
         const buttons = [
-          { id: 'welcome_browse', title: '🛍️ Browse Catalog' },
           { id: 'welcome_menu', title: '🏠 Main Menu' }
         ];
         await whatsappService.sendButtons(phone, contactInfo, buttons);
@@ -131,11 +128,22 @@ const flowManager = {
     }
 
     // Build categories list
-    const rows = catalog.categories.map(cat => ({
-      id: `cat_${cat.id}`,
-      title: `${cat.emoji} ${cat.name}`.substring(0, 24),
-      description: `Browse ${cat.name}`
-    }));
+    const rows = catalog.categories.map(cat => {
+      const match = cat.name.match(/(.+?)\s*\((.+?)\)/);
+      let displayName = cat.name;
+      let displayDesc = `Browse ${cat.name}`;
+
+      if (match) {
+        displayName = match[1].trim();
+        displayDesc = match[2].trim();
+      }
+
+      return {
+        id: `cat_${cat.id}`,
+        title: `${cat.emoji} ${displayName}`.substring(0, 24),
+        description: displayDesc.substring(0, 72)
+      };
+    });
 
     // Split rows if they exceed 10 (WhatsApp List limit is 10 rows per section/message)
     // Here we'll show the top 10 categories, or list them in multiple sections

@@ -1,5 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
+const path = require('path');
 const config = require('./config/config');
 const webhookRoutes = require('./routes/webhook.routes');
 const sheetsService = require('./services/sheets.service');
@@ -9,6 +10,7 @@ const app = express();
 // Midleware configurations
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Log incoming requests for debugging
 app.use((req, res, next) => {
