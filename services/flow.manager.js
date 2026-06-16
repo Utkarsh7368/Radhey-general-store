@@ -815,6 +815,7 @@ const flowManager = {
         
         const gpsUrl = `https://maps.google.com/?q=${session.location.latitude},${session.location.longitude}`;
 
+        let templateSuccess = false;
         if (config.whatsapp.ownerTemplateName) {
           // Send template message to bypass 24h window
           const bodyParams = [
@@ -825,13 +826,20 @@ const flowManager = {
             itemsText.trim(),
             `₹${grandTotal}`
           ];
-          await whatsappService.sendTemplate(
+          const result = await whatsappService.sendTemplate(
             ownerPhone,
             config.whatsapp.ownerTemplateName,
             config.whatsapp.ownerTemplateLang,
             bodyParams
           );
-        } else {
+          if (result && result.success) {
+            templateSuccess = true;
+          } else {
+            console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
+          }
+        }
+
+        if (!templateSuccess) {
           // Fallback: Send standard text message
           let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
           ownerAlert += `Radhey General Store\n`;

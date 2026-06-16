@@ -7,6 +7,9 @@ const config = require('../config/config');
  * @returns {Promise<object>}
  */
 const postToMeta = async (payload) => {
+  if (payload.to) {
+    payload.to = String(payload.to).replace(/[^0-9]/g, '');
+  }
   const phone = payload.to;
   const { token, phoneNumberId, apiVersion } = config.whatsapp;
 

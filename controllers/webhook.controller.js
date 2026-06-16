@@ -187,7 +187,8 @@ const webhookController = {
       // This allows returning the successful order response to the browser instantly
       (async () => {
         try {
-          // 1. Send Order Alert to Store Owner
+          let templateSuccess = false;
+          // 1. Try sending the template first
           if (config.whatsapp.ownerTemplateName) {
             const bodyParams = [
               name,
@@ -197,13 +198,21 @@ const webhookController = {
               itemsText.trim(),
               `₹${grandTotal}`
             ];
-            await whatsappService.sendTemplate(
+            const result = await whatsappService.sendTemplate(
               ownerPhone,
               config.whatsapp.ownerTemplateName,
               config.whatsapp.ownerTemplateLang,
               bodyParams
             );
-          } else {
+            if (result && result.success) {
+              templateSuccess = true;
+            } else {
+              console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
+            }
+          }
+
+          // If template failed or wasn't configured, fall back to plain text
+          if (!templateSuccess) {
             let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
             ownerAlert += `Radhey General Store\n`;
             ownerAlert += `--------------------------------\n`;
