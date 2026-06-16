@@ -614,145 +614,159 @@
       background-color: #ffcdd2;
     }
 
-    /* Payment Overlay styling */
-    .payment-overlay {
-      position: fixed;
-      top: 0;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background-color: rgba(0,0,0,0.5);
-      backdrop-filter: blur(5px);
-      z-index: 300;
-      display: none;
+    /* Full Page Payment Screen styling */
+    .payment-screen-full {
+      background-color: var(--bg);
+      min-height: 100vh;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 24px 16px;
+      font-family: inherit;
+      animation: fadeIn 0.4s ease-out;
     }
-    .payment-overlay.show {
-      display: flex;
+    
+    @keyframes fadeIn {
+      0% { opacity: 0; transform: translateY(10px); }
+      100% { opacity: 1; transform: translateY(0); }
     }
-    .payment-card {
+
+    .payment-card-full {
       background-color: var(--card-bg);
       border-radius: var(--radius);
-      width: 100%;
-      max-width: 420px;
       box-shadow: var(--shadow-lg);
       border: 1px solid var(--border);
-      overflow: hidden;
-      animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    .payment-header {
-      background-color: var(--primary);
-      color: white;
-      padding: 18px 20px;
-      text-align: center;
-    }
-    .payment-header h2 {
-      font-size: 1.25rem;
-      font-weight: 600;
-    }
-    .payment-content {
-      padding: 20px;
+      width: 100%;
+      max-width: 480px;
+      padding: 28px 24px;
       display: flex;
       flex-direction: column;
       align-items: center;
+      text-align: center;
       gap: 16px;
     }
-    .payment-amount-box {
-      background-color: var(--bg);
-      border-radius: var(--radius);
-      padding: 16px;
-      width: 100%;
-      text-align: center;
-      border: 1px solid var(--border);
-    }
-    .payment-label {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    .payment-amount {
+
+    .payment-success-icon {
+      width: 64px;
+      height: 64px;
+      background-color: var(--primary-light);
+      color: var(--primary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: 2.2rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    .payment-card-full h2 {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .order-id-sub {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: -8px;
+    }
+
+    .payment-divider {
+      width: 100%;
+      height: 1px;
+      background-color: var(--border);
+      margin: 8px 0;
+    }
+
+    .amount-title {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: -4px;
+    }
+
+    .payment-amount-large {
+      font-size: 2.8rem;
       font-weight: 700;
       color: var(--primary);
-      margin-bottom: 4px;
     }
-    .payment-order-id {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-    .payment-method-desc {
-      font-size: 0.9rem;
-      color: var(--text);
-      text-align: center;
-      line-height: 1.4;
-    }
-    .upi-pay-btn {
+
+    .payment-upi-button {
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       width: 100%;
-      background: linear-gradient(135deg, #097939 0%, #2e7d32 100%);
+      background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
       color: white;
       text-decoration: none;
-      padding: 14px;
+      padding: 16px;
       border-radius: var(--radius);
       font-weight: 600;
-      font-size: 1rem;
-      text-align: center;
+      font-size: 1.05rem;
+      box-shadow: 0 4px 12px rgba(46, 125, 50, 0.25);
       transition: all 0.2s;
-      box-shadow: 0 4px 10px rgba(46, 125, 50, 0.2);
     }
-    .upi-pay-btn:active {
+
+    .payment-upi-button:active {
       transform: scale(0.98);
-      box-shadow: 0 2px 5px rgba(46, 125, 50, 0.2);
+      box-shadow: 0 2px 6px rgba(46, 125, 50, 0.25);
     }
-    .qr-code-container {
+
+    .qr-payment-section {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      border-top: 1px solid var(--border);
-      padding-top: 16px;
+      gap: 10px;
       width: 100%;
+      background-color: var(--bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
     }
-    .qr-code-title {
-      font-size: 0.85rem;
+
+    .qr-title {
+      font-size: 0.9rem;
       font-weight: 600;
       color: var(--text);
     }
-    .qr-code-img {
-      width: 180px;
-      height: 180px;
+
+    .qr-img-large {
+      width: 200px;
+      height: 200px;
+      background: white;
       border: 1px solid var(--border);
       border-radius: var(--radius-sm);
-      padding: 4px;
-      background: white;
+      padding: 6px;
     }
-    .qr-code-desc {
-      font-size: 0.75rem;
+
+    .qr-desc {
+      font-size: 0.78rem;
       color: var(--text-muted);
-      text-align: center;
+      line-height: 1.4;
     }
-    .confirm-pay-btn {
+
+    .complete-order-btn {
       width: 100%;
       background-color: var(--accent);
       color: white;
       border: none;
-      padding: 14px;
+      padding: 15px;
       border-radius: var(--radius);
       font-weight: 600;
-      font-size: 1rem;
+      font-size: 1.05rem;
       cursor: pointer;
+      box-shadow: 0 4px 12px rgba(239, 108, 0, 0.25);
       transition: all 0.2s;
-      margin-top: 4px;
     }
-    .confirm-pay-btn:active {
+
+    .complete-order-btn:active {
       transform: scale(0.98);
+      box-shadow: 0 2px 6px rgba(239, 108, 0, 0.25);
     }
   </style>
 </head>
@@ -848,40 +862,36 @@
     <div class="spinner"></div>
   </div>
 
-  <!-- Payment Overlay -->
-  <div class="payment-overlay" id="paymentOverlay">
-    <div class="payment-card">
-      <div class="payment-header">
-        <h2>Complete UPI Payment</h2>
+  <!-- Payment Screen -->
+  <div class="payment-screen-full" id="paymentOverlay" style="display: none;">
+    <div class="payment-card-full">
+      <div class="payment-success-icon">✓</div>
+      <h2>Order Placed Successfully!</h2>
+      <p class="order-id-sub" id="paymentOrderIdText">Order ID: #000000</p>
+      
+      <div class="payment-divider"></div>
+
+      <div class="amount-title">Total Amount to Pay</div>
+      <div class="payment-amount-large" id="paymentAmountText">₹0</div>
+
+      <!-- Mobile UPI Button -->
+      <a href="#" class="payment-upi-button" id="upiPayBtn" target="_blank">
+        📱 Pay with any UPI App (GPay/PhonePe/Paytm)
+      </a>
+
+      <!-- Desktop QR Code -->
+      <div class="qr-payment-section">
+        <div class="qr-title">Or Scan QR Code to Pay</div>
+        <img src="" alt="UPI Payment QR Code" id="paymentQrCode" class="qr-img-large">
+        <div class="qr-desc">Scan using Google Pay, PhonePe, Paytm, or BHIM to pay</div>
       </div>
-      <div class="payment-content">
-        <div class="payment-amount-box">
-          <div class="payment-label">Amount to Pay</div>
-          <div class="payment-amount" id="paymentAmountText">₹0</div>
-          <div class="payment-order-id" id="paymentOrderIdText">Order ID: #000000</div>
-        </div>
 
-        <div class="payment-method-desc">
-          Choose a payment method below to complete the transfer:
-        </div>
+      <div class="payment-divider"></div>
 
-        <!-- Mobile UPI Button -->
-        <a href="#" class="upi-pay-btn" id="upiPayBtn" target="_blank">
-          📱 Pay with any UPI App
-        </a>
-
-        <!-- Desktop QR Code -->
-        <div class="qr-code-container">
-          <div class="qr-code-title">Or Scan QR Code to Pay:</div>
-          <img src="" alt="UPI Payment QR Code" id="paymentQrCode" class="qr-code-img">
-          <div class="qr-code-desc">Open Google Pay, PhonePe, Paytm, or BHIM to scan</div>
-        </div>
-
-        <!-- Confirm Button -->
-        <button class="confirm-pay-btn" id="confirmPaymentBtn">
-          ✅ Confirm Payment &amp; Open WhatsApp
-        </button>
-      </div>
+      <!-- Go to WhatsApp Button -->
+      <button class="complete-order-btn" id="confirmPaymentBtn">
+        💬 Go to WhatsApp Chat
+      </button>
     </div>
   </div>
 
@@ -1341,8 +1351,9 @@
           paymentAmountText.textContent = `₹${result.grandTotal}`;
           paymentOrderIdText.textContent = `Order ID: #${result.orderId}`;
           
-          // Construct UPI payment URL
-          const upiUrl = `upi://pay?pa=${result.ownerUpiId}&pn=${encodeURIComponent("Radhey General Store")}&am=${result.grandTotal}&cu=INR&tn=${encodeURIComponent("Order " + result.orderId)}`;
+          // Clean UPI ID and construct compliant UPI payment URL
+          const cleanUpiId = (result.ownerUpiId || '').trim().replace(/\s+/g, '');
+          const upiUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&am=${result.grandTotal}&cu=INR`;
           
           // Update pay button href
           upiPayBtn.href = upiUrl;
@@ -1357,15 +1368,17 @@
             saveCartLocal();
             refreshCartSummary();
             
-            // Redirect back to WhatsApp bot with confirmation message
+            // Redirect directly to the WhatsApp bot chat
             const cleanBotPhone = botPhone.replace(/[^0-9]/g, '');
-            const confirmMsg = `Hi, I have paid and confirmed my order #${result.orderId} of ₹${result.grandTotal}`;
-            window.location.href = `https://wa.me/${cleanBotPhone}?text=${encodeURIComponent(confirmMsg)}`;
+            window.location.href = `https://wa.me/${cleanBotPhone}`;
           };
 
-          // Hide checkout overlay and display payment overlay
+          // Hide catalog page and checkout views to display full-page payment screen
+          document.querySelector('header').style.display = 'none';
+          catalogContainer.style.display = 'none';
+          footerCart.style.display = 'none';
           checkoutOverlay.classList.remove('show');
-          paymentOverlay.classList.add('show');
+          paymentOverlay.style.display = 'flex';
         } else {
           alert('Failed to place order: ' + (result.error || 'Server error.'));
         }

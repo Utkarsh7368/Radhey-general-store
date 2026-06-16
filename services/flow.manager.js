@@ -30,7 +30,7 @@ const flowManager = {
         }
 
         // Intercept paid and confirmed messages
-        if (data.toLowerCase().includes('paid and confirmed my order') || data.toLowerCase().includes('have paid')) {
+        if (data.toLowerCase().includes('paid') || data.toLowerCase().includes('payment') || data.toLowerCase().includes('order placed') || data.toLowerCase().includes('placed my order')) {
           const confirmationText = `🎉 *Thank you for your payment!* 🙏\n\nYour order has been successfully placed. The store owner has received your order details and is verifying the payment.\n\nWe will contact you shortly to coordinate delivery.`;
           await whatsappService.sendText(phone, confirmationText);
           session.currentState = 'WELCOME';
