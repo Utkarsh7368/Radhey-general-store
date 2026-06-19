@@ -29,9 +29,25 @@ const loadLocalCatalog = () => {
  * Groups variants of the same product name in the same category.
  */
 const processRawCatalogData = (rawCategories, rawProducts) => {
+  // Helper to determine if a category/product is enabled
+  const isEnabled = (item) => {
+    const activeVal = item.Active ? item.Active.toString().trim().toUpperCase() : '';
+    const statusVal = item.Status ? item.Status.toString().trim().toUpperCase() : '';
+
+    // If either column explicitly says disabled/false, it is disabled
+    if (activeVal === 'FALSE' || activeVal === 'DISABLE' || activeVal === 'DISABLED' ||
+        statusVal === 'FALSE' || statusVal === 'DISABLE' || statusVal === 'DISABLED') {
+      return false;
+    }
+
+    // It is enabled if either column says true/enable/enabled
+    return activeVal === 'TRUE' || activeVal === 'ENABLE' || activeVal === 'ENABLED' ||
+           statusVal === 'TRUE' || statusVal === 'ENABLE' || statusVal === 'ENABLED';
+  };
+
   // 1. Parse active categories
   const categories = rawCategories
-    .filter(cat => cat.Active && cat.Active.toString().trim().toUpperCase() === 'TRUE')
+    .filter(cat => isEnabled(cat))
     .map(cat => ({
       id: cat.CategoryID.toString().trim(),
       name: cat.CategoryName.toString().trim(),
@@ -40,7 +56,7 @@ const processRawCatalogData = (rawCategories, rawProducts) => {
 
   // 2. Parse active products and group variants
   const activeProducts = rawProducts.filter(prod => {
-    const isActive = prod.Active && prod.Active.toString().trim().toUpperCase() === 'TRUE';
+    const isActive = isEnabled(prod);
     const isOutOfStock = prod.Stock && (
       prod.Stock.toString().trim().toUpperCase() === 'FALSE' ||
       prod.Stock.toString().trim().toUpperCase() === 'OUT OF STOCK' ||
@@ -142,11 +158,11 @@ const sheetsService = {
       const [categoriesResponse, productsResponse] = await Promise.all([
         sheets.spreadsheets.values.get({
           spreadsheetId,
-          range: 'Categories!A2:D', // CategoryID, CategoryName, CategoryEmoji, Active
+          range: 'Categories!A2:E', // CategoryID, CategoryName, CategoryEmoji, Active, Status (Enable/Disable)
         }),
         sheets.spreadsheets.values.get({
           spreadsheetId,
-          range: 'Products!A2:G', // ProductID, CategoryID, ProductName, VariantName, Price, Stock, Active
+          range: 'Products!A2:H', // ProductID, CategoryID, ProductName, VariantName, Price, Stock, Active, Status (Enable/Disable)
         })
       ]);
 
@@ -158,7 +174,8 @@ const sheetsService = {
         CategoryID: row[0],
         CategoryName: row[1],
         CategoryEmoji: row[2],
-        Active: row[3]
+        Active: row[3],
+        Status: row[4]
       }));
 
       const rawProducts = productsRows.map(row => ({
@@ -168,7 +185,8 @@ const sheetsService = {
         VariantName: row[3],
         Price: row[4],
         Stock: row[5],
-        Active: row[6]
+        Active: row[6],
+        Status: row[7]
       }));
 
       const structuredCatalog = processRawCatalogData(rawCategories, rawProducts);
