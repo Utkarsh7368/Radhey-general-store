@@ -3,6 +3,19 @@ const flowManager = require('../services/flow.manager');
 const whatsappService = require('../services/whatsapp.service');
 const sessionService = require('../services/session.service');
 const sheetsService = require('../services/sheets.service');
+const Razorpay = require('razorpay');
+
+let razorpay = null;
+const isRazorpayConfigured = config.razorpay.keyId && 
+                             config.razorpay.keyId !== 'mock_key_id' && 
+                             config.razorpay.keySecret;
+
+if (isRazorpayConfigured) {
+  razorpay = new Razorpay({
+    key_id: config.razorpay.keyId,
+    key_secret: config.razorpay.keySecret
+  });
+}
 
 // Cache of recently processed message IDs to handle Meta retries
 const processedMessageIds = new Set();
@@ -134,17 +147,17 @@ const webhookController = {
 
   /**
    * POST /api/place-order
-   * Places an order from the Web Catalog, notifies owner and customer.
+   * Places an order from the Web Catalog, handles COD and Online (Razorpay) payment setups.
    */
   async placeOrder(req, res) {
-    const { phone, name, address, location, cart } = req.body;
+    const { phone, name, address, location, cart, paymentMethod } = req.body;
 
     if (!phone || !name || !address || !location || !cart || !Array.isArray(cart) || cart.length === 0) {
       return res.status(400).json({ error: 'Invalid order payload. Missing required fields.' });
     }
 
     try {
-      // Fetch catalog to get secure pricing
+      // Fetch catalog to get secure pricing and configuration
       const catalogData = await sheetsService.getCatalog();
       let itemsText = '';
       let grandTotal = 0;
@@ -180,81 +193,299 @@ const webhookController = {
         cart: verifiedCart // update cart in session with verified prices
       });
 
-      const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
-      const gpsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+      const orderId = Math.floor(100000 + Math.random() * 900000);
+      const isCod = paymentMethod === 'cod';
 
-      // Execute WhatsApp notifications asynchronously in the background
-      // This allows returning the successful order response to the browser instantly
-      (async () => {
-        try {
-          let templateSuccess = false;
-          // 1. Try sending the template first
-          if (config.whatsapp.ownerTemplateName) {
-            const bodyParams = [
-              name,
-              phone,
-              address,
-              gpsUrl,
-              itemsText.trim(),
-              `₹${grandTotal}`
-            ];
-            const result = await whatsappService.sendTemplate(
-              ownerPhone,
-              config.whatsapp.ownerTemplateName,
-              config.whatsapp.ownerTemplateLang,
-              bodyParams
-            );
-            if (result && result.success) {
-              templateSuccess = true;
-            } else {
-              console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
+      if (isCod) {
+        const isCodEnabled = catalogData.isCodEnabled;
+        if (!isCodEnabled) {
+          return res.status(400).json({ error: 'Cash on Delivery is currently disabled by the store owner.' });
+        }
+
+        const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
+        const gpsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+
+        // Send notifications immediately for COD order
+        (async () => {
+          try {
+            let templateSuccess = false;
+            if (config.whatsapp.ownerTemplateName) {
+              const bodyParams = [
+                name,
+                phone,
+                address,
+                gpsUrl,
+                itemsText.trim(),
+                `₹${grandTotal} (COD - Collect Cash)`
+              ];
+              const result = await whatsappService.sendTemplate(
+                ownerPhone,
+                config.whatsapp.ownerTemplateName,
+                config.whatsapp.ownerTemplateLang,
+                bodyParams
+              );
+              if (result && result.success) {
+                templateSuccess = true;
+              } else {
+                console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
+              }
             }
+
+            if (!templateSuccess) {
+              let ownerAlert = `🔔 *NEW ORDER RECEIVED (COD)*\n`;
+              ownerAlert += `Radhey General Store\n`;
+              ownerAlert += `--------------------------------\n`;
+              ownerAlert += `👤 *Customer:* ${name}\n`;
+              ownerAlert += `📞 *Phone:* ${phone}\n`;
+              ownerAlert += `🏠 *Address:* ${address}\n`;
+              ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+              ownerAlert += `*Items:*\n${itemsText}`;
+              ownerAlert += `--------------------------------\n`;
+              ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (COD - Collect Cash)*\n\n`;
+              ownerAlert += `Please contact the customer for delivery verification.`;
+
+              await whatsappService.sendText(ownerPhone, ownerAlert);
+            }
+          } catch (err) {
+            console.error('❌ Failed to alert store owner for COD order:', err);
           }
 
-          // If template failed or wasn't configured, fall back to plain text
-          if (!templateSuccess) {
-            let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
-            ownerAlert += `Radhey General Store\n`;
-            ownerAlert += `--------------------------------\n`;
-            ownerAlert += `👤 *Customer:* ${name}\n`;
-            ownerAlert += `📞 *Phone:* ${phone}\n`;
-            ownerAlert += `🏠 *Address:* ${address}\n`;
-            ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
-            ownerAlert += `*Items:*\n${itemsText}`;
-            ownerAlert += `--------------------------------\n`;
-            ownerAlert += `💰 *Total Payment:* *₹${grandTotal}*\n\n`;
-            ownerAlert += `Please contact the customer for delivery verification.`;
-
-            await whatsappService.sendText(ownerPhone, ownerAlert);
+          try {
+            const thankYouMessage = `🎉 *Thank you! Your Cash on Delivery order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${address}`;
+            await whatsappService.sendText(phone, thankYouMessage);
+          } catch (err) {
+            console.error('❌ Failed to send customer confirmation receipt:', err);
           }
-        } catch (err) {
-          console.error('❌ Failed to alert store owner:', err);
+        })();
+
+        // Clear customer cart session but save profile and address
+        sessionService.clearCart(phone);
+
+        return res.status(200).json({
+          success: true,
+          paymentMethod: 'cod',
+          grandTotal,
+          ownerUpiId: config.whatsapp.ownerUpiId || '',
+          orderId
+        });
+
+      } else {
+        // Online Payment (Razorpay Order creation)
+        if (isRazorpayConfigured) {
+          try {
+            const rzpOrder = await razorpay.orders.create({
+              amount: grandTotal * 100, // in paise
+              currency: 'INR',
+              receipt: `rcpt_${orderId}`
+            });
+
+            return res.status(200).json({
+              success: true,
+              paymentMethod: 'online',
+              isMock: false,
+              orderId,
+              razorpayOrderId: rzpOrder.id,
+              keyId: config.razorpay.keyId,
+              amount: grandTotal * 100,
+              grandTotal
+            });
+          } catch (rzpErr) {
+            console.error('❌ Razorpay order creation failed:', rzpErr);
+            return res.status(500).json({ error: 'Failed to create online payment order via Razorpay.' });
+          }
+        } else {
+          // Mock Online payment
+          console.log(`🤖 Razorpay not configured. Running online payment in MOCK MODE for order ID #${orderId}`);
+          return res.status(200).json({
+            success: true,
+            paymentMethod: 'online',
+            isMock: true,
+            orderId,
+            razorpayOrderId: `mock_order_${Date.now()}`,
+            keyId: 'mock_key_id',
+            amount: grandTotal * 100,
+            grandTotal
+          });
         }
+      }
 
-        try {
-          // 2. Send Order Confirmation receipt to Customer
-          const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal}\n*Delivering to:* ${address}`;
-          await whatsappService.sendText(phone, thankYouMessage);
-        } catch (err) {
-          console.error('❌ Failed to send customer confirmation receipt:', err);
-        }
-      })();
-
-      // 3. Clear customer cart session but save profile and address
-      sessionService.clearCart(phone);
-
-      const ownerUpiId = config.whatsapp.ownerUpiId || '919110170322@ybl';
-
-      return res.status(200).json({ 
-        success: true, 
-        message: 'Order processed successfully.',
-        grandTotal,
-        ownerUpiId,
-        orderId: Math.floor(100000 + Math.random() * 900000)
-      });
     } catch (err) {
       console.error('❌ Error in placeOrder endpoint:', err);
       return res.status(500).json({ error: 'Failed to process the order.' });
+    }
+  },
+
+  /**
+   * POST /api/create-order
+   * Standalone endpoint to create a Razorpay order.
+   */
+  async createOrder(req, res) {
+    const { amount, currency, receipt } = req.body;
+
+    if (!amount) {
+      return res.status(400).json({ error: 'Missing required field: amount' });
+    }
+
+    const amt = parseInt(amount);
+    if (isNaN(amt) || amt < 100) {
+      return res.status(400).json({ error: 'Amount must be at least 100 paise (₹1).' });
+    }
+
+    try {
+      if (!isRazorpayConfigured) {
+        console.log(`🤖 Razorpay not configured for create-order. Creating MOCK order.`);
+        return res.status(200).json({
+          order_id: `mock_order_${Date.now()}`,
+          amount: amt,
+          currency: currency || 'INR',
+          isMock: true
+        });
+      }
+
+      const options = {
+        amount: amt,
+        currency: currency || 'INR',
+        receipt: receipt || `rcpt_${Date.now()}`
+      };
+
+      const rzpOrder = await razorpay.orders.create(options);
+      return res.status(200).json({
+        order_id: rzpOrder.id,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency
+      });
+    } catch (err) {
+      console.error('❌ Razorpay order creation failed:', err);
+      if (err.statusCode === 401) {
+        return res.status(401).json({ error: 'Razorpay authentication failed.' });
+      }
+      return res.status(500).json({ error: 'Failed to create Razorpay order.' });
+    }
+  },
+
+  /**
+   * POST /api/verify-payment
+   * Verifies Razorpay payment signature and sends order alerts to the store owner and customer.
+   */
+  async verifyPayment(req, res) {
+    const { 
+      orderId, 
+      razorpayOrderId, 
+      razorpayPaymentId, 
+      razorpaySignature,
+      isMock,
+      customerDetails
+    } = req.body;
+
+    if (!orderId || !razorpayOrderId || (!isMock && (!razorpayPaymentId || !razorpaySignature))) {
+      return res.status(400).json({ error: 'Missing payment verification parameters.' });
+    }
+
+    try {
+      let isVerified = false;
+
+      if (isMock) {
+        console.log(`🤖 [MOCK PAYMENT] Simulating successful payment for order #${orderId}`);
+        isVerified = true;
+      } else {
+        const crypto = require('crypto');
+        const generated_signature = crypto
+          .createHmac('sha256', config.razorpay.keySecret)
+          .update(razorpayOrderId + "|" + razorpayPaymentId)
+          .digest('hex');
+
+        if (generated_signature === razorpaySignature) {
+          isVerified = true;
+          console.log(`✅ [RAZORPAY PAYMENT] Signature verified for order #${orderId}, paymentId: ${razorpayPaymentId}`);
+        } else {
+          console.warn(`❌ [RAZORPAY PAYMENT] Invalid signature for order #${orderId}`);
+          return res.status(400).json({ error: 'Payment verification signature mismatch.' });
+        }
+      }
+
+      if (isVerified) {
+        const { phone, name, address, location, cart } = customerDetails || {};
+
+        if (phone && name && address && location && cart) {
+          const catalogData = await sheetsService.getCatalog();
+          let itemsText = '';
+          let grandTotal = 0;
+
+          for (const item of cart) {
+            const secureProduct = catalogData.productsMap[item.productId];
+            if (secureProduct) {
+              const itemTotal = secureProduct.price * item.quantity;
+              grandTotal += itemTotal;
+              const variantDesc = secureProduct.variantName ? ` (${secureProduct.variantName})` : '';
+              itemsText += `${secureProduct.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
+            }
+          }
+
+          const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
+          const gpsUrl = `https://maps.google.com/?q=${location.latitude},${location.longitude}`;
+
+          (async () => {
+            try {
+              let templateSuccess = false;
+              if (config.whatsapp.ownerTemplateName) {
+                const bodyParams = [
+                  name,
+                  phone,
+                  address,
+                  gpsUrl,
+                  itemsText.trim(),
+                  `₹${grandTotal} (Paid Online - Razorpay)`
+                ];
+                const result = await whatsappService.sendTemplate(
+                  ownerPhone,
+                  config.whatsapp.ownerTemplateName,
+                  config.whatsapp.ownerTemplateLang,
+                  bodyParams
+                );
+                if (result && result.success) {
+                  templateSuccess = true;
+                } else {
+                  console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
+                }
+              }
+
+              if (!templateSuccess) {
+                let ownerAlert = `🔔 *NEW ORDER RECEIVED (PAID ONLINE)*\n`;
+                ownerAlert += `Radhey General Store\n`;
+                ownerAlert += `--------------------------------\n`;
+                ownerAlert += `👤 *Customer:* ${name}\n`;
+                ownerAlert += `📞 *Phone:* ${phone}\n`;
+                ownerAlert += `🏠 *Address:* ${address}\n`;
+                ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+                ownerAlert += `*Items:*\n${itemsText}`;
+                ownerAlert += `--------------------------------\n`;
+                ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (PAID ONLINE)*\n\n`;
+                ownerAlert += `Payment verified successfully via Razorpay.`;
+
+                await whatsappService.sendText(ownerPhone, ownerAlert);
+              }
+            } catch (err) {
+              console.error('❌ Failed to alert store owner after payment:', err);
+            }
+
+            try {
+              const thankYouMessage = `🎉 *Thank you! Your online payment was successful and your order is placed.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (Paid)\n*Delivering to:* ${address}`;
+              await whatsappService.sendText(phone, thankYouMessage);
+            } catch (err) {
+              console.error('❌ Failed to send customer payment confirmation receipt:', err);
+            }
+          })();
+
+          sessionService.clearCart(phone);
+        } else {
+          console.warn('⚠️ Missing customer details in verification payload, skipping notifications.');
+        }
+
+        return res.status(200).json({ success: true, message: 'Payment verified and order placed successfully.' });
+      }
+    } catch (err) {
+      console.error('❌ Error verifying payment:', err);
+      return res.status(500).json({ error: 'Failed to verify payment.' });
     }
   }
 };

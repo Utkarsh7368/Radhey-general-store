@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <style>
     :root {
       --primary: #2e7d32;
@@ -811,6 +812,67 @@
       transform: scale(0.98);
       box-shadow: 0 2px 6px rgba(239, 108, 0, 0.25);
     }
+
+    /* Payment Method Option Cards */
+    .payment-options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .payment-option-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      background-color: var(--card-bg);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .payment-option-card:hover {
+      border-color: var(--primary);
+      background-color: var(--primary-light);
+    }
+
+    .payment-option-card input[type="radio"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
+    .payment-option-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .payment-title {
+      font-weight: 600;
+      font-size: 0.95rem;
+      color: var(--text);
+    }
+
+    .payment-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .payment-option-card.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      border-color: var(--border) !important;
+      background-color: #fafafa !important;
+    }
+
+    .payment-option-card.disabled:hover {
+      background-color: #fafafa !important;
+      border-color: var(--border) !important;
+    }
   </style>
 </head>
 <body>
@@ -879,6 +941,30 @@
         </button>
         <div class="location-status" id="locationStatus">
           Location coordinates not shared yet (Required)
+        </div>
+
+        <!-- Payment Method -->
+        <div class="form-group" style="margin-top: 16px;">
+          <label>Payment Method *</label>
+          <div class="payment-options-container">
+            <label class="payment-option-card" id="onlineOptionCard">
+              <input type="radio" name="paymentMethod" value="online" checked>
+              <div class="payment-option-details">
+                <span class="payment-title">Pay Online</span>
+                <span class="payment-desc">Cards, UPI, Wallet, NetBanking (via Razorpay)</span>
+              </div>
+            </label>
+            <label class="payment-option-card" id="codOptionCard">
+              <input type="radio" name="paymentMethod" value="cod">
+              <div class="payment-option-details">
+                <span class="payment-title">Cash on Delivery (COD)</span>
+                <span class="payment-desc">Pay cash when groceries are delivered</span>
+              </div>
+            </label>
+            <div id="codDisabledText" style="display: none; font-size: 0.8rem; color: #d32f2f; margin-top: 4px; font-weight: 500;">
+              ⚠️ Cash on Delivery (COD) is temporarily disabled by the store owner.
+            </div>
+          </div>
         </div>
 
         <!-- Order Summary -->
@@ -1033,6 +1119,25 @@
         const data = await res.json();
         catalog = data;
         botPhone = data.botPhone || '919999999999';
+        
+        // Handle COD enabled/disabled status
+        const codOptionCard = document.getElementById('codOptionCard');
+        const codDisabledText = document.getElementById('codDisabledText');
+        const codRadioInput = codOptionCard.querySelector('input[type="radio"]');
+        const onlineRadioInput = document.getElementById('onlineOptionCard').querySelector('input[type="radio"]');
+
+        if (data.isCodEnabled === false) {
+          codOptionCard.classList.add('disabled');
+          codRadioInput.disabled = true;
+          codRadioInput.checked = false;
+          onlineRadioInput.checked = true;
+          codDisabledText.style.display = 'block';
+        } else {
+          codOptionCard.classList.remove('disabled');
+          codRadioInput.disabled = false;
+          codDisabledText.style.display = 'none';
+        }
+
         renderCatalog();
       } catch (err) {
         console.error('Failed to load catalog:', err);
@@ -1368,12 +1473,15 @@
     orderForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked').value;
+      
       const payload = {
         phone: customerPhoneInput.value.trim(),
         name: customerNameInput.value.trim(),
         address: deliveryAddressInput.value.trim(),
         location: userLocation,
-        cart: Object.values(cart)
+        cart: Object.values(cart),
+        paymentMethod: paymentMethod
       };
 
       // Save profile details to localStorage for future use
@@ -1394,64 +1502,120 @@
         const result = await response.json();
         loadingOverlay.classList.remove('show');
 
-        if (response.ok && result.success) {
-          // Populate UPI Payment parameters
-          paymentAmountText.textContent = `₹${result.grandTotal}`;
-          paymentOrderIdText.textContent = `Order ID: #${result.orderId}`;
-          
-          // Clean UPI ID
-          const cleanUpiId = (result.ownerUpiId || '').trim().replace(/\s+/g, '');
-          paymentUpiIdText.textContent = cleanUpiId;
-          
-          // Construct UPI URL for QR code (amount-free to comply with NPCI P2P security rules)
-          const upiQrUrl = `upi://pay?pa=${cleanUpiId}&pn=${encodeURIComponent("Radhey General Store")}&cu=INR`;
-          
-          // Update QR Code image source using dynamic generator
-          paymentQrCode.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=10&data=${encodeURIComponent(upiQrUrl)}`;
+        if (!response.ok || !result.success) {
+          alert('Failed to place order: ' + (result.error || 'Server error.'));
+          return;
+        }
 
-          // Configure Copy UPI Button
-          copyUpiBtn.onclick = async () => {
-            try {
-              await navigator.clipboard.writeText(cleanUpiId);
-              copyUpiBtn.textContent = '✅ Copied!';
-              setTimeout(() => {
-                copyUpiBtn.textContent = '📋 Copy UPI ID';
-              }, 2000);
-            } catch (err) {
-              const el = document.createElement('textarea');
-              el.value = cleanUpiId;
-              document.body.appendChild(el);
-              el.select();
-              document.execCommand('copy');
-              document.body.removeChild(el);
-              copyUpiBtn.textContent = '✅ Copied!';
-              setTimeout(() => {
-                copyUpiBtn.textContent = '📋 Copy UPI ID';
-              }, 2000);
-            }
-          };
+        if (paymentMethod === 'cod') {
+          // Cash on Delivery Order Placed Successfully!
+          cart = {};
+          saveCartLocal();
+          refreshCartSummary();
 
-          // Configure Confirm Payment Click Listener
-          confirmPaymentBtn.onclick = () => {
-            // Clear local storage cart
-            cart = {};
-            saveCartLocal();
-            refreshCartSummary();
-            
-            // Redirect directly to the WhatsApp bot chat
+          // Show COD success message using success screen
+          successScreen.querySelector('h2').textContent = 'Order Placed (COD)!';
+          successScreen.querySelector('p').textContent = `Your Cash on Delivery order of ₹${result.grandTotal} was placed successfully. The owner has been notified.`;
+          successScreen.querySelector('.close-window-btn').onclick = () => {
             const cleanBotPhone = botPhone.replace(/[^0-9]/g, '');
             window.location.href = `https://wa.me/${cleanBotPhone}`;
           };
 
-          // Hide catalog page and checkout views to display full-page payment screen
           document.querySelector('header').style.display = 'none';
           catalogContainer.style.display = 'none';
           footerCart.style.display = 'none';
           checkoutOverlay.classList.remove('show');
-          paymentOverlay.style.display = 'flex';
+          successScreen.classList.add('show');
+
         } else {
-          alert('Failed to place order: ' + (result.error || 'Server error.'));
+          // Pay Online (Razorpay Checkout)
+          const options = {
+            key: result.keyId,
+            amount: result.amount,
+            currency: 'INR',
+            name: 'Radhey General Store',
+            description: `Order #${result.orderId}`,
+            order_id: result.isMock ? null : result.razorpayOrderId,
+            handler: async function (rzpResponse) {
+              loadingOverlay.classList.add('show');
+              try {
+                // Post payment verification to server
+                const verifyRes = await fetch('/api/verify-payment', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                    orderId: result.orderId,
+                    razorpayOrderId: result.razorpayOrderId,
+                    razorpayPaymentId: rzpResponse.razorpay_payment_id || `mock_payment_${Date.now()}`,
+                    razorpaySignature: rzpResponse.razorpay_signature || `mock_sig_${Date.now()}`,
+                    isMock: result.isMock,
+                    customerDetails: payload
+                  })
+                });
+
+                const verifyResult = await verifyRes.json();
+                loadingOverlay.classList.remove('show');
+
+                if (verifyRes.ok && verifyResult.success) {
+                  cart = {};
+                  saveCartLocal();
+                  refreshCartSummary();
+
+                  // Show Online success screen
+                  successScreen.querySelector('h2').textContent = 'Payment Successful!';
+                  successScreen.querySelector('p').textContent = `Your online payment of ₹${result.grandTotal} was verified. Your order has been placed.`;
+                  successScreen.querySelector('.close-window-btn').onclick = () => {
+                    const cleanBotPhone = botPhone.replace(/[^0-9]/g, '');
+                    window.location.href = `https://wa.me/${cleanBotPhone}`;
+                  };
+
+                  document.querySelector('header').style.display = 'none';
+                  catalogContainer.style.display = 'none';
+                  footerCart.style.display = 'none';
+                  checkoutOverlay.classList.remove('show');
+                  successScreen.classList.add('show');
+                } else {
+                  alert('Payment verification failed: ' + (verifyResult.error || 'Server error.'));
+                }
+              } catch (err) {
+                loadingOverlay.classList.remove('show');
+                console.error(err);
+                alert('Connection error verifying payment. Please contact the owner.');
+              }
+            },
+            prefill: {
+              name: payload.name,
+              contact: payload.phone
+            },
+            theme: {
+              color: '#2e7d32' // primary color match
+            },
+            modal: {
+              ondismiss: function () {
+                alert('Payment was cancelled. Please complete payment to place your order.');
+              }
+            }
+          };
+
+          if (result.isMock) {
+            // Mock payment modal popup simulation for easy manual testing
+            const confirmMock = confirm(`🤖 [MOCK PAYMENT MODE]\nClick OK to simulate a SUCCESSFUL Razorpay online payment of ₹${result.grandTotal} for Order #${result.orderId}.\n\nClick Cancel to simulate a cancelled transaction.`);
+            if (confirmMock) {
+              options.handler({
+                razorpay_payment_id: `mock_pay_id_${Math.random().toString(36).substr(2, 9)}`,
+                razorpay_signature: `mock_signature_val`
+              });
+            } else {
+              alert('Payment simulation cancelled.');
+            }
+          } else {
+            const rzp = new Razorpay(options);
+            rzp.open();
+          }
         }
+
       } catch (err) {
         loadingOverlay.classList.remove('show');
         console.error(err);

@@ -824,7 +824,7 @@ const flowManager = {
             session.address,
             gpsUrl,
             itemsText.trim(),
-            `₹${grandTotal}`
+            `₹${grandTotal} (COD - Collect Cash)`
           ];
           const result = await whatsappService.sendTemplate(
             ownerPhone,
@@ -841,7 +841,7 @@ const flowManager = {
 
         if (!templateSuccess) {
           // Fallback: Send standard text message
-          let ownerAlert = `🔔 *NEW ORDER RECEIVED*\n`;
+          let ownerAlert = `🔔 *NEW ORDER RECEIVED (COD)*\n`;
           ownerAlert += `Radhey General Store\n`;
           ownerAlert += `--------------------------------\n`;
           ownerAlert += `👤 *Customer:* ${session.customerName}\n`;
@@ -850,7 +850,7 @@ const flowManager = {
           ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
           ownerAlert += `*Items:*\n${itemsText}`;
           ownerAlert += `--------------------------------\n`;
-          ownerAlert += `💰 *Total Payment:* *₹${grandTotal}*\n\n`;
+          ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (COD - Collect Cash)*\n\n`;
           ownerAlert += `Please contact the customer for delivery verification.`;
 
           await whatsappService.sendText(ownerPhone, ownerAlert);

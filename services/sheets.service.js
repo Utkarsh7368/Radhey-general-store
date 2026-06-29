@@ -17,10 +17,14 @@ const loadLocalCatalog = () => {
   try {
     const data = fs.readFileSync(localCatalogPath, 'utf-8');
     const localData = JSON.parse(data);
-    return processRawCatalogData(localData.categories, localData.products);
+    const structured = processRawCatalogData(localData.categories, localData.products);
+    return {
+      ...structured,
+      isCodEnabled: !config.payment.disableCod
+    };
   } catch (err) {
     console.error('Failed to load local catalog fallback:', err);
-    return { categories: [], productsGrouped: {}, productsMap: {} };
+    return { categories: [], productsGrouped: {}, productsMap: {}, isCodEnabled: !config.payment.disableCod };
   }
 };
 
@@ -189,11 +193,36 @@ const sheetsService = {
         Status: row[7]
       }));
 
+      let isCodEnabled = true;
+      try {
+        const settingsResponse = await sheets.spreadsheets.values.get({
+          spreadsheetId,
+          range: 'Settings!A2:B', // SettingName, SettingValue
+        });
+        const settingsRows = settingsResponse.data.values || [];
+        const settingsMap = {};
+        settingsRows.forEach(row => {
+          if (row[0]) {
+            settingsMap[row[0].toString().trim().toUpperCase()] = row[1] ? row[1].toString().trim().toUpperCase() : '';
+          }
+        });
+        if (settingsMap['DISABLE_COD'] === 'TRUE' || settingsMap['DISABLE_COD'] === 'YES' || settingsMap['DISABLE_COD'] === 'DISABLE') {
+          isCodEnabled = false;
+        } else if (settingsMap['COD_ENABLED'] === 'FALSE' || settingsMap['COD_ENABLED'] === 'NO') {
+          isCodEnabled = false;
+        }
+      } catch (err) {
+        console.log('ℹ️ Settings tab not found in Google Sheet. Falling back to environment variables.');
+      }
+
       const structuredCatalog = processRawCatalogData(rawCategories, rawProducts);
       
-      catalogCache = structuredCatalog;
+      catalogCache = {
+        ...structuredCatalog,
+        isCodEnabled: isCodEnabled && !config.payment.disableCod
+      };
       lastFetchedTime = now;
-      console.log(`✅ Loaded catalog from Google Sheets successfully: ${structuredCatalog.categories.length} categories, ${Object.keys(structuredCatalog.productsMap).length} products/variants.`);
+      console.log(`✅ Loaded catalog from Google Sheets successfully: ${structuredCatalog.categories.length} categories, ${Object.keys(structuredCatalog.productsMap).length} products/variants. COD Enabled: ${catalogCache.isCodEnabled}`);
       
       return catalogCache;
     } catch (err) {

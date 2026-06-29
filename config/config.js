@@ -23,6 +23,13 @@ const config = {
     credentialsPath: path.join(__dirname, '../google/credentials.json'),
     serviceAccountJson: process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
   },
+  razorpay: {
+    keyId: process.env.RAZORPAY_KEY_ID || 'mock_key_id',
+    keySecret: process.env.RAZORPAY_KEY_SECRET || '',
+  },
+  payment: {
+    disableCod: process.env.DISABLE_COD === 'true',
+  }
 };
 
 // Log warning if configurations are missing (will fall back to simulator and local catalog)
