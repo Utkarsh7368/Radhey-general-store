@@ -893,6 +893,11 @@
     </div>
   </header>
 
+  <!-- Delivery Promotion Banner -->
+  <div style="background: #e8f5e9; color: #2e7d32; font-size: 0.85rem; padding: 8px 16px; text-align: center; font-weight: 600; border-bottom: 1px solid #c8e6c9;">
+    🚚 Free delivery on orders of ₹199 or more. ₹10 delivery charge for orders below ₹199.
+  </div>
+
   <!-- Product Catalog -->
   <div class="container" id="catalogContainer">
     <div class="loading-state empty-state">Loading product catalog...</div>
@@ -1390,7 +1395,7 @@
     function renderCheckoutSummary() {
       checkoutItemsList.innerHTML = '';
       const items = Object.values(cart);
-      const totalPrice = items.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
+      const subtotal = items.reduce((acc, curr) => acc + (curr.price * curr.quantity), 0);
 
       items.forEach(item => {
         const itemTotal = item.price * item.quantity;
@@ -1404,7 +1409,31 @@
         checkoutItemsList.appendChild(div);
       });
 
-      checkoutTotalPriceText.textContent = `₹${totalPrice}`;
+      const deliveryCharge = subtotal < 199 ? 10 : 0;
+      const grandTotal = subtotal + deliveryCharge;
+
+      // Add subtotal row
+      const subtotalDiv = document.createElement('div');
+      subtotalDiv.className = 'summary-item';
+      subtotalDiv.style.borderTop = '1px solid var(--border)';
+      subtotalDiv.style.paddingTop = '8px';
+      subtotalDiv.style.marginTop = '8px';
+      subtotalDiv.innerHTML = `
+        <span>Items Subtotal</span>
+        <span>₹${subtotal}</span>
+      `;
+      checkoutItemsList.appendChild(subtotalDiv);
+
+      // Add delivery charge row
+      const deliveryDiv = document.createElement('div');
+      deliveryDiv.className = 'summary-item';
+      deliveryDiv.innerHTML = `
+        <span>Delivery Charge</span>
+        <span>${deliveryCharge > 0 ? '₹10' : '<span style="color: var(--primary); font-weight: 600;">FREE</span>'}</span>
+      `;
+      checkoutItemsList.appendChild(deliveryDiv);
+
+      checkoutTotalPriceText.textContent = `₹${grandTotal}`;
       validateFormInputs();
     }
 

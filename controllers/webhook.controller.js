@@ -160,7 +160,7 @@ const webhookController = {
       // Fetch catalog to get secure pricing and configuration
       const catalogData = await sheetsService.getCatalog();
       let itemsText = '';
-      let grandTotal = 0;
+      let subtotal = 0;
       const verifiedCart = [];
 
       for (const item of cart) {
@@ -172,7 +172,7 @@ const webhookController = {
         const price = secureProduct.price;
         const variantDesc = secureProduct.variantName ? ` (${secureProduct.variantName})` : '';
         const itemTotal = price * item.quantity;
-        grandTotal += itemTotal;
+        subtotal += itemTotal;
         
         itemsText += `${secureProduct.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
         verifiedCart.push({
@@ -182,6 +182,15 @@ const webhookController = {
           price,
           quantity: item.quantity
         });
+      }
+
+      const deliveryCharge = subtotal < 199 ? 10 : 0;
+      const grandTotal = subtotal + deliveryCharge;
+
+      if (deliveryCharge > 0) {
+        itemsText += `Delivery Charge: ₹${deliveryCharge}\n`;
+      } else {
+        itemsText += `Delivery: Free\n`;
       }
 
       // Fetch session and save details
@@ -251,7 +260,7 @@ const webhookController = {
           }
 
           try {
-            const thankYouMessage = `🎉 *Thank you! Your Cash on Delivery order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${address}`;
+            const thankYouMessage = `🎉 *Thank you! Your Cash on Delivery order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${address}\n\nFor any help, this number is customer care: 9194225955`;
             await whatsappService.sendText(phone, thankYouMessage);
           } catch (err) {
             console.error('❌ Failed to send customer confirmation receipt:', err);
@@ -409,16 +418,25 @@ const webhookController = {
         if (phone && name && address && location && cart) {
           const catalogData = await sheetsService.getCatalog();
           let itemsText = '';
-          let grandTotal = 0;
+          let subtotal = 0;
 
           for (const item of cart) {
             const secureProduct = catalogData.productsMap[item.productId];
             if (secureProduct) {
               const itemTotal = secureProduct.price * item.quantity;
-              grandTotal += itemTotal;
+              subtotal += itemTotal;
               const variantDesc = secureProduct.variantName ? ` (${secureProduct.variantName})` : '';
               itemsText += `${secureProduct.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
             }
+          }
+
+          const deliveryCharge = subtotal < 199 ? 10 : 0;
+          const grandTotal = subtotal + deliveryCharge;
+
+          if (deliveryCharge > 0) {
+            itemsText += `Delivery Charge: ₹${deliveryCharge}\n`;
+          } else {
+            itemsText += `Delivery: Free\n`;
           }
 
           const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
@@ -469,7 +487,7 @@ const webhookController = {
             }
 
             try {
-              const thankYouMessage = `🎉 *Thank you! Your online payment was successful and your order is placed.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (Paid)\n*Delivering to:* ${address}`;
+              const thankYouMessage = `🎉 *Thank you! Your online payment was successful and your order is placed.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (Paid)\n*Delivering to:* ${address}\n\nFor any help, this number is customer care: 9194225955`;
               await whatsappService.sendText(phone, thankYouMessage);
             } catch (err) {
               console.error('❌ Failed to send customer payment confirmation receipt:', err);

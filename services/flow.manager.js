@@ -778,15 +778,24 @@ const flowManager = {
     summary += `📍 *GPS URL:* https://maps.google.com/?q=${session.location.latitude},${session.location.longitude}\n\n`;
     summary += `*Items Ordered:*\n`;
 
-    let grandTotal = 0;
+    let subtotal = 0;
     session.cart.forEach((item) => {
       const variantDesc = item.variantName ? ` (${item.variantName})` : '';
       const itemTotal = item.price * item.quantity;
-      grandTotal += itemTotal;
+      subtotal += itemTotal;
       summary += `- ${item.productName}${variantDesc} x ${item.quantity} = *₹${itemTotal}*\n`;
     });
 
+    const deliveryCharge = subtotal < 199 ? 10 : 0;
+    const grandTotal = subtotal + deliveryCharge;
+
     summary += `--------------------------------\n`;
+    if (deliveryCharge > 0) {
+      summary += `Subtotal: ₹${subtotal}\n`;
+      summary += `Delivery Charge: ₹10\n`;
+    } else {
+      summary += `Delivery: Free\n`;
+    }
     summary += `💰 *Grand Total: ₹${grandTotal}*\n\n`;
     summary += `Please review and confirm your order:`;
 
@@ -803,17 +812,25 @@ const flowManager = {
       if (data === 'order_confirm') {
         // 1. Process order and alert owner
         const ownerPhone = config.whatsapp.ownerPhone || '919999999999';
+        const gpsUrl = `https://maps.google.com/?q=${session.location.latitude},${session.location.longitude}`;
         
         let itemsText = '';
-        let grandTotal = 0;
+        let subtotal = 0;
         session.cart.forEach((item, index) => {
           const variantDesc = item.variantName ? ` (${item.variantName})` : '';
           const itemTotal = item.price * item.quantity;
-          grandTotal += itemTotal;
+          subtotal += itemTotal;
           itemsText += `${index + 1}. ${item.productName}${variantDesc} x ${item.quantity} (₹${itemTotal})\n`;
         });
         
-        const gpsUrl = `https://maps.google.com/?q=${session.location.latitude},${session.location.longitude}`;
+        const deliveryCharge = subtotal < 199 ? 10 : 0;
+        const grandTotal = subtotal + deliveryCharge;
+
+        if (deliveryCharge > 0) {
+          itemsText += `Delivery Charge: ₹${deliveryCharge}\n`;
+        } else {
+          itemsText += `Delivery: Free\n`;
+        }
 
         let templateSuccess = false;
         if (config.whatsapp.ownerTemplateName) {
@@ -856,8 +873,8 @@ const flowManager = {
           await whatsappService.sendText(ownerPhone, ownerAlert);
         }
 
-        // Send confirmation to customer
-        const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal}\n*Delivering to:* ${session.address}`;
+        // Send confirmation to customer with customer care number
+        const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${session.address}\n\nFor any help, this number is customer care: 9194225955`;
         await whatsappService.sendText(phone, thankYouMessage);
 
         // 2. Clear customer cart but save profile and address
