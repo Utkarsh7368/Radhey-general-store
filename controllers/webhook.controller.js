@@ -260,7 +260,7 @@ const webhookController = {
           }
 
           try {
-            const thankYouMessage = `🎉 *Thank you! Your Cash on Delivery order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${address}\n\nFor any help, this number is customer care: 9194225955`;
+            const thankYouMessage = `🎉 *Thank you! Your Cash on Delivery order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${address}\n\n📱 Join our WhatsApp Channel for updates & offers:\nhttps://whatsapp.com/channel/0029Vb6HMDN11ulUh7cPbu0l\n\nFor any help, this number is customer care: 9194225955`;
             await whatsappService.sendText(phone, thankYouMessage);
           } catch (err) {
             console.error('❌ Failed to send customer confirmation receipt:', err);
@@ -487,7 +487,7 @@ const webhookController = {
             }
 
             try {
-              const thankYouMessage = `🎉 *Thank you! Your online payment was successful and your order is placed.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (Paid)\n*Delivering to:* ${address}\n\nFor any help, this number is customer care: 9194225955`;
+              const thankYouMessage = `🎉 *Thank you! Your online payment was successful and your order is placed.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (Paid)\n*Delivering to:* ${address}\n\n📱 Join our WhatsApp Channel for updates & offers:\nhttps://whatsapp.com/channel/0029Vb6HMDN11ulUh7cPbu0l\n\nFor any help, this number is customer care: 9194225955`;
               await whatsappService.sendText(phone, thankYouMessage);
             } catch (err) {
               console.error('❌ Failed to send customer payment confirmation receipt:', err);

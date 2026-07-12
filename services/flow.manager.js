@@ -114,7 +114,7 @@ const flowManager = {
     const host = config.serverUrl || 'http://localhost:3000';
     const catalogLink = `${host}/index.html?phone=${phone}&t=${Date.now()}`;
 
-    const body = `Welcome to *Radhey General Store*! 🛍️\n\nYour local Grocery & Daily Needs Store. Browse our catalog, select items, and place your order in one go on your phone! Click the button below to get started:\n\n*(Type "contact" anytime for store details)*`;
+    const body = `Welcome to *Radhey General Store*! 🛍️\n\nYour local Grocery & Daily Needs Store. Browse our catalog, select items, and place your order in one go on your phone! Click the button below to get started.\n\n📱 Join our WhatsApp Channel for exclusive updates & offers:\nhttps://whatsapp.com/channel/0029Vb6HMDN11ulUh7cPbu0l\n\n*(Type "contact" anytime for store details)*`;
     await whatsappService.sendUrlButton(phone, body, '🛍️ Open Catalog', catalogLink);
   },
 
@@ -874,7 +874,7 @@ const flowManager = {
         }
 
         // Send confirmation to customer with customer care number
-        const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${session.address}\n\nFor any help, this number is customer care: 9194225955`;
+        const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${session.address}\n\n📱 Join our WhatsApp Channel for updates & offers:\nhttps://whatsapp.com/channel/0029Vb6HMDN11ulUh7cPbu0l\n\nFor any help, this number is customer care: 9194225955`;
         await whatsappService.sendText(phone, thankYouMessage);
 
         // 2. Clear customer cart but save profile and address
