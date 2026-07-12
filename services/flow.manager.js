@@ -838,9 +838,9 @@ const flowManager = {
           const bodyParams = [
             session.customerName,
             session.customerPhone,
-            session.address,
+            (session.address || '').replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
             gpsUrl,
-            itemsText.trim(),
+            itemsText.trim().replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
             `₹${grandTotal} (COD - Collect Cash)`
           ];
           const result = await whatsappService.sendTemplate(

@@ -222,9 +222,9 @@ const webhookController = {
               const bodyParams = [
                 name,
                 phone,
-                address,
+                (address || '').replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
                 gpsUrl,
-                itemsText.trim(),
+                itemsText.trim().replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
                 `₹${grandTotal} (COD - Collect Cash)`
               ];
               const result = await whatsappService.sendTemplate(
@@ -449,10 +449,10 @@ const webhookController = {
                 const bodyParams = [
                   name,
                   phone,
-                  address,
+                  (address || '').replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
                   gpsUrl,
-                  itemsText.trim(),
-                  `₹${grandTotal} (Paid Online - Razorpay)`
+                  itemsText.trim().replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
+                  `₹${grandTotal} (Paid via Razorpay)`
                 ];
                 const result = await whatsappService.sendTemplate(
                   ownerPhone,
