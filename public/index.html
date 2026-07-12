@@ -874,20 +874,42 @@
       border-color: var(--border) !important;
     }
 
-    .banner-marquee {
-      background-color: var(--accent);
+    .banner-container {
+      background: linear-gradient(90deg, #ff8a00, #e52e71);
       color: white;
-      padding: 8px 16px;
+      padding: 10px 0;
       font-size: 0.95rem;
-      font-weight: 500;
+      font-weight: 600;
       display: none;
+      overflow: hidden;
+      position: relative;
+      white-space: nowrap;
+      box-shadow: 0 4px 15px rgba(229, 46, 113, 0.3);
+      z-index: 101;
+    }
+
+    .banner-text {
+      display: inline-block;
+      padding-left: 100%;
+      animation: marquee 20s linear infinite;
+      letter-spacing: 0.5px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+
+    @keyframes marquee {
+      0% {
+        transform: translate(0, 0);
+      }
+      100% {
+        transform: translate(-100%, 0);
+      }
     }
   </style>
 </head>
 <body>
   <!-- Banner -->
-  <div id="bannerContainer" class="banner-marquee">
-    <marquee id="bannerText" behavior="scroll" direction="left" scrollamount="5"></marquee>
+  <div id="bannerContainer" class="banner-container">
+    <div id="bannerText" class="banner-text"></div>
   </div>
 
   <!-- Header -->
