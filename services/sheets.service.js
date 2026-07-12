@@ -23,8 +23,7 @@ const loadLocalCatalog = () => {
       isCodEnabled: !config.payment.disableCod
     };
   } catch (err) {
-    console.error('Failed to load local catalog fallback:', err);
-    return { categories: [], productsGrouped: {}, productsMap: {}, isCodEnabled: !config.payment.disableCod };
+    return { categories: [], productsGrouped: {}, productsMap: {}, isCodEnabled: !config.payment.disableCod, isBannerEnabled: false, bannerText: '' };
   }
 };
 
@@ -194,6 +193,8 @@ const sheetsService = {
       }));
 
       let isCodEnabled = true;
+      let isBannerEnabled = false;
+      let bannerText = '';
       try {
         const settingsResponse = await sheets.spreadsheets.values.get({
           spreadsheetId,
@@ -201,9 +202,12 @@ const sheetsService = {
         });
         const settingsRows = settingsResponse.data.values || [];
         const settingsMap = {};
+        const settingsMapRaw = {};
         settingsRows.forEach(row => {
           if (row[0]) {
-            settingsMap[row[0].toString().trim().toUpperCase()] = row[1] ? row[1].toString().trim().toUpperCase() : '';
+            const key = row[0].toString().trim().toUpperCase();
+            settingsMap[key] = row[1] ? row[1].toString().trim().toUpperCase() : '';
+            settingsMapRaw[key] = row[1] ? row[1].toString().trim() : '';
           }
         });
         if (settingsMap['DISABLE_COD'] === 'TRUE' || settingsMap['DISABLE_COD'] === 'YES' || settingsMap['DISABLE_COD'] === 'DISABLE') {
@@ -211,6 +215,11 @@ const sheetsService = {
         } else if (settingsMap['COD_ENABLED'] === 'FALSE' || settingsMap['COD_ENABLED'] === 'NO') {
           isCodEnabled = false;
         }
+        
+        if (settingsMap['BANNER_ENABLED'] === 'TRUE' || settingsMap['BANNER_ENABLED'] === 'YES' || settingsMap['BANNER_ENABLED'] === 'ENABLE') {
+          isBannerEnabled = true;
+        }
+        bannerText = settingsMapRaw['BANNER_TEXT'] || '';
       } catch (err) {
         console.log('ℹ️ Settings tab not found in Google Sheet. Falling back to environment variables.');
       }
@@ -219,10 +228,12 @@ const sheetsService = {
       
       catalogCache = {
         ...structuredCatalog,
-        isCodEnabled: isCodEnabled && !config.payment.disableCod
+        isCodEnabled: isCodEnabled && !config.payment.disableCod,
+        isBannerEnabled,
+        bannerText
       };
       lastFetchedTime = now;
-      console.log(`✅ Loaded catalog from Google Sheets successfully: ${structuredCatalog.categories.length} categories, ${Object.keys(structuredCatalog.productsMap).length} products/variants. COD Enabled: ${catalogCache.isCodEnabled}`);
+      console.log(`✅ Loaded catalog from Google Sheets successfully: ${structuredCatalog.categories.length} categories, ${Object.keys(structuredCatalog.productsMap).length} products/variants. COD Enabled: ${catalogCache.isCodEnabled}. Banner: ${isBannerEnabled}`);
       
       return catalogCache;
     } catch (err) {

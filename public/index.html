@@ -873,9 +873,22 @@
       background-color: #fafafa !important;
       border-color: var(--border) !important;
     }
+
+    .banner-marquee {
+      background-color: var(--accent);
+      color: white;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      font-weight: 500;
+      display: none;
+    }
   </style>
 </head>
 <body>
+  <!-- Banner -->
+  <div id="bannerContainer" class="banner-marquee">
+    <marquee id="bannerText" behavior="scroll" direction="left" scrollamount="5"></marquee>
+  </div>
 
   <!-- Header -->
   <header>
@@ -1143,6 +1156,16 @@
           codOptionCard.classList.remove('disabled');
           codRadioInput.disabled = false;
           codDisabledText.style.display = 'none';
+        }
+
+        // Handle Banner
+        const bannerContainer = document.getElementById('bannerContainer');
+        const bannerTextElem = document.getElementById('bannerText');
+        if (data.isBannerEnabled && data.bannerText) {
+          bannerTextElem.innerText = data.bannerText;
+          bannerContainer.style.display = 'block';
+        } else {
+          bannerContainer.style.display = 'none';
         }
 
         renderCatalog();
