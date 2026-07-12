@@ -1053,9 +1053,10 @@
     const userPhone = urlParams.get('phone') || '';
     const timestamp = parseInt(urlParams.get('t')) || 0;
 
-    // Verify link expiration (24h validity)
+    // Verify link expiration (24h validity) - TEMPORARILY DISABLED FOR RAZORPAY VERIFICATION
     const now = Date.now();
     const oneDayInMs = 24 * 60 * 60 * 1000;
+    /*
     if (!timestamp || (now - timestamp) > oneDayInMs) {
       document.body.innerHTML = `
         <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 24px; text-align: center; font-family: 'Outfit', sans-serif; background-color: #f8f9fa;">
@@ -1067,6 +1068,7 @@
       `;
       throw new Error('Link expired');
     }
+    */
 
     // Elements
     const catalogContainer = document.getElementById('catalogContainer');
