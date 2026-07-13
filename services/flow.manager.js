@@ -832,46 +832,20 @@ const flowManager = {
           itemsText += `Delivery: Free\n`;
         }
 
-        let templateSuccess = false;
-        if (config.whatsapp.ownerTemplateName) {
-          // Send template message to bypass 24h window
-          const bodyParams = [
-            session.customerName,
-            session.customerPhone,
-            (session.address || '').replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
-            gpsUrl,
-            itemsText.trim().replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
-            `₹${grandTotal} (COD - Collect Cash)`
-          ];
-          const result = await whatsappService.sendTemplate(
-            ownerPhone,
-            config.whatsapp.ownerTemplateName,
-            config.whatsapp.ownerTemplateLang,
-            bodyParams
-          );
-          if (result && result.success) {
-            templateSuccess = true;
-          } else {
-            console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
-          }
-        }
+        // Always send standard text message alert to owner
+        let ownerAlert = `🔔 *NEW ORDER RECEIVED (COD)*\n`;
+        ownerAlert += `Radhey General Store\n`;
+        ownerAlert += `--------------------------------\n`;
+        ownerAlert += `👤 *Customer:* ${session.customerName}\n`;
+        ownerAlert += `📞 *Phone:* ${session.customerPhone}\n`;
+        ownerAlert += `🏠 *Address:* ${session.address}\n`;
+        ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+        ownerAlert += `*Items:*\n${itemsText}`;
+        ownerAlert += `--------------------------------\n`;
+        ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (COD - Collect Cash)*\n\n`;
+        ownerAlert += `Please contact the customer for delivery verification.`;
 
-        if (!templateSuccess) {
-          // Fallback: Send standard text message
-          let ownerAlert = `🔔 *NEW ORDER RECEIVED (COD)*\n`;
-          ownerAlert += `Radhey General Store\n`;
-          ownerAlert += `--------------------------------\n`;
-          ownerAlert += `👤 *Customer:* ${session.customerName}\n`;
-          ownerAlert += `📞 *Phone:* ${session.customerPhone}\n`;
-          ownerAlert += `🏠 *Address:* ${session.address}\n`;
-          ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
-          ownerAlert += `*Items:*\n${itemsText}`;
-          ownerAlert += `--------------------------------\n`;
-          ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (COD - Collect Cash)*\n\n`;
-          ownerAlert += `Please contact the customer for delivery verification.`;
-
-          await whatsappService.sendText(ownerPhone, ownerAlert);
-        }
+        await whatsappService.sendText(ownerPhone, ownerAlert);
 
         // Send confirmation to customer with customer care number
         const thankYouMessage = `🎉 *Thank you! Your order has been placed successfully.*\n\nOur team is packing your groceries. The store owner will contact you shortly.\n\n*Order Total:* ₹${grandTotal} (COD)\n*Delivering to:* ${session.address}\n\n📱 Join our WhatsApp Channel for updates & offers:\nhttps://whatsapp.com/channel/0029Vb6HMDN11ulUh7cPbu0l\n\nFor any help, this number is customer care: 9194225955`;

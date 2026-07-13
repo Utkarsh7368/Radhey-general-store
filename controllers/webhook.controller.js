@@ -217,44 +217,19 @@ const webhookController = {
         // Send notifications immediately for COD order
         (async () => {
           try {
-            let templateSuccess = false;
-            if (config.whatsapp.ownerTemplateName) {
-              const bodyParams = [
-                name,
-                phone,
-                (address || '').replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
-                gpsUrl,
-                itemsText.trim().replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
-                `₹${grandTotal} (COD - Collect Cash)`
-              ];
-              const result = await whatsappService.sendTemplate(
-                ownerPhone,
-                config.whatsapp.ownerTemplateName,
-                config.whatsapp.ownerTemplateLang,
-                bodyParams
-              );
-              if (result && result.success) {
-                templateSuccess = true;
-              } else {
-                console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
-              }
-            }
+            let ownerAlert = `🔔 *NEW ORDER RECEIVED (COD)*\n`;
+            ownerAlert += `Radhey General Store\n`;
+            ownerAlert += `--------------------------------\n`;
+            ownerAlert += `👤 *Customer:* ${name}\n`;
+            ownerAlert += `📞 *Phone:* ${phone}\n`;
+            ownerAlert += `🏠 *Address:* ${address}\n`;
+            ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+            ownerAlert += `*Items:*\n${itemsText}`;
+            ownerAlert += `--------------------------------\n`;
+            ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (COD - Collect Cash)*\n\n`;
+            ownerAlert += `Please contact the customer for delivery verification.`;
 
-            if (!templateSuccess) {
-              let ownerAlert = `🔔 *NEW ORDER RECEIVED (COD)*\n`;
-              ownerAlert += `Radhey General Store\n`;
-              ownerAlert += `--------------------------------\n`;
-              ownerAlert += `👤 *Customer:* ${name}\n`;
-              ownerAlert += `📞 *Phone:* ${phone}\n`;
-              ownerAlert += `🏠 *Address:* ${address}\n`;
-              ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
-              ownerAlert += `*Items:*\n${itemsText}`;
-              ownerAlert += `--------------------------------\n`;
-              ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (COD - Collect Cash)*\n\n`;
-              ownerAlert += `Please contact the customer for delivery verification.`;
-
-              await whatsappService.sendText(ownerPhone, ownerAlert);
-            }
+            await whatsappService.sendText(ownerPhone, ownerAlert);
           } catch (err) {
             console.error('❌ Failed to alert store owner for COD order:', err);
           }
@@ -444,44 +419,19 @@ const webhookController = {
 
           (async () => {
             try {
-              let templateSuccess = false;
-              if (config.whatsapp.ownerTemplateName) {
-                const bodyParams = [
-                  name,
-                  phone,
-                  (address || '').replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
-                  gpsUrl,
-                  itemsText.trim().replace(/[\r\n]+/g, ', ').replace(/\s{2,}/g, ' '),
-                  `₹${grandTotal} (Paid via Razorpay)`
-                ];
-                const result = await whatsappService.sendTemplate(
-                  ownerPhone,
-                  config.whatsapp.ownerTemplateName,
-                  config.whatsapp.ownerTemplateLang,
-                  bodyParams
-                );
-                if (result && result.success) {
-                  templateSuccess = true;
-                } else {
-                  console.warn('⚠️ Template alert failed, attempting fallback plain text message.');
-                }
-              }
+              let ownerAlert = `🔔 *NEW ORDER RECEIVED (PAID ONLINE)*\n`;
+              ownerAlert += `Radhey General Store\n`;
+              ownerAlert += `--------------------------------\n`;
+              ownerAlert += `👤 *Customer:* ${name}\n`;
+              ownerAlert += `📞 *Phone:* ${phone}\n`;
+              ownerAlert += `🏠 *Address:* ${address}\n`;
+              ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
+              ownerAlert += `*Items:*\n${itemsText}`;
+              ownerAlert += `--------------------------------\n`;
+              ownerAlert += `💰 *Total Paid:* *₹${grandTotal} (Online - Razorpay)*\n\n`;
+              ownerAlert += `Payment is verified and successful.`;
 
-              if (!templateSuccess) {
-                let ownerAlert = `🔔 *NEW ORDER RECEIVED (PAID ONLINE)*\n`;
-                ownerAlert += `Radhey General Store\n`;
-                ownerAlert += `--------------------------------\n`;
-                ownerAlert += `👤 *Customer:* ${name}\n`;
-                ownerAlert += `📞 *Phone:* ${phone}\n`;
-                ownerAlert += `🏠 *Address:* ${address}\n`;
-                ownerAlert += `📍 *GPS Map:* ${gpsUrl}\n\n`;
-                ownerAlert += `*Items:*\n${itemsText}`;
-                ownerAlert += `--------------------------------\n`;
-                ownerAlert += `💰 *Total Payment:* *₹${grandTotal} (PAID ONLINE)*\n\n`;
-                ownerAlert += `Payment verified successfully via Razorpay.`;
-
-                await whatsappService.sendText(ownerPhone, ownerAlert);
-              }
+              await whatsappService.sendText(ownerPhone, ownerAlert);
             } catch (err) {
               console.error('❌ Failed to alert store owner after payment:', err);
             }

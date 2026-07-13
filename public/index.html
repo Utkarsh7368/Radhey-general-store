@@ -32,9 +32,22 @@
 
     body {
       font-family: 'Outfit', sans-serif;
-      background-color: var(--bg);
+      background-color: #e9ecef;
       color: var(--text);
       line-height: 1.5;
+      display: flex;
+      justify-content: center;
+      margin: 0;
+    }
+
+    #appWrapper {
+      width: 100%;
+      max-width: 600px;
+      min-height: 100vh;
+      background-color: var(--bg);
+      position: relative;
+      box-shadow: 0 0 30px rgba(0,0,0,0.1);
+      transform: translate(0, 0); /* Constrains fixed elements */
       padding-bottom: 90px;
     }
 
@@ -907,6 +920,7 @@
   </style>
 </head>
 <body>
+<div id="appWrapper">
   <!-- Banner -->
   <div id="bannerContainer" class="banner-container">
     <div id="bannerText" class="banner-text"></div>
@@ -1717,5 +1731,6 @@
     refreshCartSummary();
     loadCatalog();
   </script>
+</div>
 </body>
 </html>
